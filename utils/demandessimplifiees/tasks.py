@@ -32,10 +32,13 @@ class CollectDemarcheOperator(BaseOperator):
     def execute(self, context):
         sha256_hash = hashlib.sha256()
         collected_data = get_demarche_from_demarches_simplifiees(self.demarche_number)
+        collected_data_json = json.loads(collected_data)
+        if "errors" in collected_data_json:
+            raise Exception(f"Error while collecting data: {collected_data_json['errors']}")
 
         demarche_data_brute_id = uuid.uuid4()
 
-        demarche = get_demarche(json.loads(collected_data))
+        demarche = get_demarche(collected_data_json)
         processed_dossiers = process_dossiers(demarche.dossiers.nodes)
         # avis = get_avis(demarche.dossiers.nodes)
         releve_index = get_releve_index(demarche.dossiers.nodes)

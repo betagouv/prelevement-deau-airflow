@@ -12,7 +12,7 @@ class DemarcheDataBrute(Base):
     demarche_number = Column(Integer)
 
     # PreprocessedDossier 1-N
-    preprocessed_dossiers = relationship("PreprocessedDossier", back_populates="demarche_data_brute")
+    dossiers = relationship("PreprocessedDossier", back_populates="demarche_data_brute")
 
     # VolumesPompes 1-N
     volumes_pompes = relationship("VolumesPompes", back_populates="demarche_data_brute")
@@ -28,35 +28,36 @@ class DemarcheDataBrute(Base):
 
 
 class PreprocessedDossier(Base):
-    __tablename__ = "preprocessed_dossier"
-    number = Column(Integer, index=True)
-    email = Column(String)
-    civilite = Column(String)
-    nom = Column(String)
-    prenom = Column(String)
-    deposeParUnTiers = Column(Boolean)
-    nomMandataire = Column(String, nullable=True)
-    prenomMandataire = Column(String, nullable=True)
-    archived = Column(Boolean)
-    state = Column(String)
-    dateDerniereModification = Column(DateTime)
-    dateDepot = Column(DateTime)
-    datePassageEnInstruction = Column(DateTime)
-    dateTraitement = Column(DateTime)
-    motivation = Column(String)
+    __tablename__ = "dossier"
+    id_dossier = Column(Integer, index=True)
+    adresse_email_connexion = Column(String)
+    civilite_declarant = Column(String)
+    nom_declarant = Column(String)
+    prenom_declarant = Column(String)
+    depot_pour_mandataire = Column(Boolean)
+    nom_mandataire = Column(String, nullable=True)
+    prenom_mandataire = Column(String, nullable=True)
+    archive = Column(Boolean)
+    etat_dossier = Column(String)
+    derniere_mise_a_jour = Column(DateTime)
+    date_depot = Column(DateTime)
+    date_passage_instruction = Column(DateTime)
+    date_traitement = Column(DateTime)
+    motivation_decision = Column(String)
     instructeurs = Column(String)
     groupe_instructeur = Column(String)
+
     coordonnees = Column(String)
-    adresse_email = Column(String)
+    adresse_email_declarant = Column(String)
     numero_telephone = Column(String)
     statut_declarant = Column(String)
     raison_sociale_structure = Column(String)
-    point_prelevement_eau = Column(String)
     type_prelevement = Column(String)
+    point_prelevement_eau = Column(String)
     numero_arrete_aot = Column(String)
     prelevement_citerne = Column(String)
     volume_preleve = Column(String)
-    mode_transmission_donnees = Column(String)
+    mode_transmission_donnees_camion_citerne = Column(String)
     volumes_pompes_jour = Column(String)
     copie_registre_papier = Column(String)
     conclusion = Column(String)
@@ -72,32 +73,33 @@ class PreprocessedDossier(Base):
     prelevement_icpe = Column(String)
     donnees_standardisees = Column(String)
     prelevement_aep_zre = Column(String)
+    nom_point_prelevement = Column(String)
 
     validation_informations = Column(Boolean)
-    details_prelevements = Column(Boolean)
+    details_prelevements_camion_citerne = Column(Boolean)
     donnees_compteur_volumetrique = Column(Boolean)
     compteur_lecture_directe = Column(Boolean)
-    signalement_panne_compteur = Column(Boolean)
-    prelevement_autorise_mois_precedent = Column(Boolean)
-    au_moins_un_prelevement = Column(Boolean)
+    panne_compteur = Column(Boolean)
+    prelevement_sur_periode_aot_agricole = Column(Boolean)
+    prelevement_sur_periode_camion_citerne = Column(Boolean)
 
-    date_debut_declaration = Column(DateTime)
-    date_fin_declaration = Column(DateTime)
+    date_debut_periode_declaree = Column(DateTime)
+    date_fin_periode_declaree = Column(DateTime)
 
-    annee_prelevement = Column(Integer)
-    nom_point_prelevement = Column(String)
+    annee_prelevement_camion_citerne = Column(Integer)
 
     # DemarcheDataBrute 1-N
     demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
-    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="preprocessed_dossiers")
+    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="dossiers")
+
 
 class ReleveIndex(Base):
     __tablename__ = "releve_index"
     ligne = Column(Integer)
-    date = Column(DateTime)
-    index = Column(Float)
+    date_releve_index = Column(DateTime)
+    releve_index = Column(Float)
 
-    dossier_id = Column(Integer)
+    id_dossier = Column(Integer)
 
     # DemarcheDataBrute 1-N
     demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
@@ -107,41 +109,41 @@ class ReleveIndex(Base):
 class VolumesPompes(Base):
     __tablename__ = "volumes_pompes"
 
-    dossier_id = Column(Integer)
+    id_dossier = Column(Integer)
 
     # DemarcheDataBrute 1-N
     demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
     demarche_data_brute = relationship("DemarcheDataBrute", back_populates="volumes_pompes")
 
     ligne = Column(Integer)
-    point_prelevement = Column(String)
-    annee = Column(Integer)
-    volume_pompe = Column(Float)
-    date = Column(DateTime)
+    point_prelevement_camion_citerne = Column(String)
+    annee_prelevement_camion_citerne_2 = Column(Integer)
+    volumes_pompes_camions_citernes = Column(Float)
+    date_prelevement_camion_citerne = Column(DateTime)
 
 
 class ExtraitDeRegistre(Base):
     __tablename__ = "extrait_de_registre"
 
-    dossier_id = Column(Integer)
+    id_dossier = Column(Integer)
 
     # DemarcheDataBrute 1-N
     demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
     demarche_data_brute = relationship("DemarcheDataBrute", back_populates="extrait_de_registres")
 
     ligne = Column(Integer)
-    extrait_registre = Column(String)
+    extrait_registre_papier = Column(String)
 
 
 class DonneesPointDePrelevement(Base):
     __tablename__ = "donnees_point_de_prelevement"
-    dossier_id = Column(Integer)
+    id_dossier = Column(Integer)
 
     # DemarcheDataBrute 1-N
     demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
     demarche_data_brute = relationship("DemarcheDataBrute", back_populates="donnees_point_de_prelevements")
 
     ligne = Column(Integer)
-    point_prelevement = Column(String)
-    donnees_standardisees = Column(String)
-    autres_documents = Column(String)
+    nom_point_prelevement = Column(String)
+    fichier_tableur = Column(String)
+    fichier_autre_document = Column(String)

@@ -11,7 +11,8 @@ from utils.demandessimplifiees.constant import champs_text_db_labels, champs_che
     champs_integer_number_db_labels, champs_repetition_db_labels, champs_piece_justificative_db_labels
 from utils.demandessimplifiees.schemas import ChampType, CheckboxChamp, DateChamp, IntegerNumberChamp, TextChamp, \
     PieceJustificativeChamp, DecimalNumberChamp, MultipleDropDownListChamp, RepetitionChamp, Champ, Dossier, \
-    PreprocessedDossierSerializer, EnrichedAvis, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, ExtraitDeRegistreSerializer, \
+    PreprocessedDossierSerializer, EnrichedAvis, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, \
+    ExtraitDeRegistreSerializer, \
     DonneesPointDePrelevementSerializer
 
 
@@ -102,38 +103,38 @@ def get_demarche(demarches_simplfiees_data: dict):
     return current_demarche
 
 
-def process_dossier(current_dossier: Dossier):
+def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
     data = {}
     # ID
-    data["number"] = current_dossier.number
+    data["id_dossier"] = current_dossier.number
     # Email
-    data["email"] = current_dossier.usager.email
+    data["adresse_email_connexion"] = current_dossier.usager.email
     # Civilité
-    data["civilite"] = current_dossier.demandeur.civilite
+    data["civilite_declarant"] = current_dossier.demandeur.civilite
     # Nom
-    data["nom"] = current_dossier.demandeur.nom
+    data["nom_declarant"] = current_dossier.demandeur.nom
     # Prénom
-    data["prenom"] = current_dossier.demandeur.prenom
+    data["prenom_declarant"] = current_dossier.demandeur.prenom
     # Dépôt pour un tiers
-    data["deposeParUnTiers"] = current_dossier.deposeParUnTiers
+    data["depot_pour_mandataire"] = current_dossier.deposeParUnTiers
     # Nom du mandataire
-    data["nomMandataire"] = current_dossier.nomMandataire
+    data["nom_mandataire"] = current_dossier.nomMandataire
     # Prénom du mandataire
-    data["prenomMandataire"] = current_dossier.prenomMandataire
+    data["prenom_mandataire"] = current_dossier.prenomMandataire
     # Archivé
-    data["archived"] = current_dossier.archived
+    data["archive"] = current_dossier.archived
     # État du dossier
-    data["state"] = current_dossier.state
+    data["etat_dossier"] = current_dossier.state
     # Dernière mise à jour le
-    data["dateDerniereModification"] = current_dossier.dateDerniereModification
+    data["derniere_mise_a_jour"] = current_dossier.dateDerniereModification
     # Déposé le
-    data["dateDepot"] = current_dossier.dateDepot
+    data["date_depot"] = current_dossier.dateDepot
     # Passé en instruction le
-    data["datePassageEnInstruction"] = current_dossier.datePassageEnInstruction
+    data["date_passage_instruction"] = current_dossier.datePassageEnInstruction
     # Traité le
-    data["dateTraitement"] = current_dossier.dateTraitement
+    data["date_traitement"] = current_dossier.dateTraitement
     # Motivation de la décision
-    data["motivation"] = current_dossier.motivation
+    data["motivation_decision"] = current_dossier.motivation
     # Instructeurs
     data["instructeurs"] = current_dossier.instructeurs
     # groupe instructeur
@@ -153,6 +154,7 @@ def process_dossier(current_dossier: Dossier):
         elif decode64(champ.champDescriptorId) in champs_piece_justificative_db_labels:
             pass
         else:
+            print(decode64(champ.champDescriptorId))
             print(champ)
     return PreprocessedDossierSerializer.validate(data)
 
@@ -171,7 +173,7 @@ def get_avis(dossiers: List[Dossier]):
         if dossier.avis:
             for curr_avis in dossier.avis:
                 new_enriched_avis_data = curr_avis.dict()
-                new_enriched_avis_data["dossier_id"] = dossier.number
+                new_enriched_avis_data["id_dossier"] = dossier.number
                 enriched_avis.append(EnrichedAvis.validate(new_enriched_avis_data))
     return enriched_avis
 
@@ -188,14 +190,14 @@ def get_releve_index(dossiers: List[Dossier]):
                 row = champ.rows[row_id]
 
                 new_releve_index = {
-                    "dossier_id": dossier.number,
+                    "id_dossier": dossier.number,
                     "ligne": row_id + 1,
                 }
                 for row_champ in row.champs:
                     if decode64(row_champ.champDescriptorId) == "Champ-3888598":
-                        new_releve_index["date"] = row_champ.date
+                        new_releve_index["date_releve_index"] = row_champ.date
                     if decode64(row_champ.champDescriptorId) == "Champ-3888599":
-                        new_releve_index["index"] = row_champ.decimalNumber
+                        new_releve_index["releve_index"] = row_champ.decimalNumber
                 releve_index_list.append(ReleveIndexSerializer.validate(new_releve_index))
     return releve_index_list
 
@@ -212,18 +214,18 @@ def get_volumes_pompes(dossiers: List[Dossier]):
                 row = champ.rows[row_id]
 
                 new_volumes_pompes = {
-                    "dossier_id": dossier.number,
+                    "id_dossier": dossier.number,
                     "ligne": row_id + 1,
                 }
                 for row_champ in row.champs:
                     if decode64(row_champ.champDescriptorId) == "Champ-3888497":
-                        new_volumes_pompes["point_prelevement"] = row_champ.label
+                        new_volumes_pompes["point_prelevement_camion_citerne"] = row_champ.label
                     elif decode64(row_champ.champDescriptorId) == "Champ-3888520":
-                        new_volumes_pompes["annee"] = row_champ.integerNumber
+                        new_volumes_pompes["annee_prelevement_camion_citerne_2"] = row_champ.integerNumber
                     elif decode64(row_champ.champDescriptorId) == "Champ-3888512":
-                        new_volumes_pompes["volume_pompe"] = row_champ.decimalNumber
+                        new_volumes_pompes["volumes_pompes_camions_citernes"] = row_champ.decimalNumber
                     elif decode64(row_champ.champDescriptorId) == "Champ-3888496":
-                        new_volumes_pompes["date"] = row_champ.date
+                        new_volumes_pompes["date_prelevement_camion_citerne"] = row_champ.date
                 volumes_pompes_list.append(VolumesPompesSerializer.validate(new_volumes_pompes))
     return volumes_pompes_list
 
@@ -239,12 +241,12 @@ def get_extrait_registre(dossiers: List[Dossier]):
             for row_id in range(len(champ.rows)):
                 row = champ.rows[row_id]
                 new_extrait_registre = {
-                    "dossier_id": dossier.number,
+                    "id_dossier": dossier.number,
                     "ligne": row_id + 1,
                 }
                 for row_champ in row.champs:
                     if decode64(row_champ.champDescriptorId) == "Champ-3915102":
-                        new_extrait_registre["extrait_registre"] = row_champ
+                        new_extrait_registre["extrait_registre_papier"] = row_champ
 
                 extrait_registre_list.append(ExtraitDeRegistreSerializer.validate(new_extrait_registre))
     return extrait_registre_list
@@ -261,16 +263,16 @@ def get_donnees_point_de_prelevement(dossiers: List[Dossier]):
             for row_id in range(len(champ.rows)):
                 row = champ.rows[row_id]
                 new_donnees_point_de_prelevement = {
-                    "dossier_id": dossier.number,
+                    "id_dossier": dossier.number,
                     "ligne": row_id + 1,
                 }
                 for row_champ in row.champs:
                     if decode64(row_champ.champDescriptorId) == "Champ-4017191":
-                        new_donnees_point_de_prelevement["point_prelevement"] = row_champ.values
+                        new_donnees_point_de_prelevement["nom_point_prelevement"] = row_champ.values
                     if decode64(row_champ.champDescriptorId) == "Champ-3642817":
-                        new_donnees_point_de_prelevement["donnees_standardisees"] = row_champ
+                        new_donnees_point_de_prelevement["fichier_tableur"] = row_champ
                     if decode64(row_champ.champDescriptorId) == "Champ-4017531":
-                        new_donnees_point_de_prelevement["autres_documents"] = row_champ
+                        new_donnees_point_de_prelevement["fichier_autre_document"] = row_champ
                 donnees_point_de_prelevement_list.append(
                     DonneesPointDePrelevementSerializer.validate(new_donnees_point_de_prelevement))
     return donnees_point_de_prelevement_list
