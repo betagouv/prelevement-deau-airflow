@@ -26,6 +26,12 @@ class DemarcheDataBrute(Base):
     # ReleveIndex 1-N
     releve_index = relationship("ReleveIndex", back_populates="demarche_data_brute")
 
+    # Avis 1-N
+    avis = relationship("Avis", back_populates="demarche_data_brute")
+
+    # Message 1-N
+    message = relationship("Message", back_populates="demarche_data_brute")
+
 
 class PreprocessedDossier(Base):
     __tablename__ = "dossier"
@@ -147,3 +153,37 @@ class DonneesPointDePrelevement(Base):
     nom_point_prelevement = Column(String)
     fichier_tableur = Column(String)
     fichier_autre_document = Column(String)
+
+
+class Avis(Base):
+    __tablename__ = "avis"
+    id_dossier = Column(Integer)
+    id_avis = Column(String)
+
+    # DemarcheDataBrute 1-N
+    demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
+    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="avis")
+
+    question = Column(String)
+    reponse = Column(String)
+    date_question = Column(DateTime)
+    date_reponse = Column(DateTime)
+    claimant_email = Column(String)
+    expert_email = Column(String)
+    pieces_jointes = Column(String)
+
+
+class Message(Base):
+    __tablename__ = "message"
+
+    id_dossier = Column(Integer)
+    id_message = Column(String)
+
+    # DemarcheDataBrute 1-N
+    demarche_data_brute_id = Column(UUID(as_uuid=True), ForeignKey("demarche_data_brute.id"))
+    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="message")
+
+    email = Column(String)
+    body = Column(String)
+    date_creation = Column(DateTime)
+    pieces_jointes = Column(String)

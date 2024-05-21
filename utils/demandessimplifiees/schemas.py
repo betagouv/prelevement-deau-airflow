@@ -77,8 +77,20 @@ class File(BaseModel):
     filename: str
     url: str
 
+    def dict(self, **kwargs):
+        return {
+            "checksum": self.checksum,
+            "contentType": self.contentType,
+            "createdAt": self.createdAt,
+            "filename": self.filename,
+            "url": self.url
+        }
 
-class Message(BaseModel):
+    def __str__(self):
+        return str(self.dict())
+
+
+class MessageSerializer(BaseModel):
     id: str
     attachments: List[File]
     body: str
@@ -131,7 +143,7 @@ class PieceJustificativeChamp(BasicChamp):
     files: List[File]
 
     def __str__(self):
-        return ";".join([f.url for f in self.files])
+        return "[" + ";".join([str(f) for f in self.files]) + "]"
 
 
 class MultipleDropDownListChamp(BasicChamp):
@@ -168,7 +180,7 @@ class GroupeInstructeur(BaseModel):
 
 # AVIS
 
-class Avis(BaseModel):
+class AvisSerializer(BaseModel):
     id: str
     question: str
     reponse: Optional[str] = None
@@ -179,8 +191,48 @@ class Avis(BaseModel):
     attachments: List[File] = []
 
 
-class EnrichedAvis(Avis):
+class EnrichedAvisSerializer(BaseModel):
+    id_avis: str
     id_dossier: int
+    question: str
+    reponse: Optional[str] = None
+    date_question: datetime.datetime
+    date_reponse: Optional[datetime.datetime] = None
+    claimant_email: str
+    expert_email: str
+    pieces_jointes: List[File] = []
+
+    def dict(self, **kwargs):
+        return {
+            "id_avis": self.id_avis,
+            "id_dossier": self.id_dossier,
+            "question": self.question,
+            "reponse": self.reponse,
+            "date_question": self.date_question,
+            "date_reponse": self.date_reponse,
+            "claimant_email": self.claimant_email,
+            "expert_email": self.expert_email,
+            "pieces_jointes": "[" + ",".join([str(f) for f in self.pieces_jointes]) + "]"
+        }
+
+
+class EnrichedMessageSerializer(BaseModel):
+    id_message: str
+    id_dossier: int
+    email: str
+    body: str
+    date_creation: datetime.datetime
+    pieces_jointes: List[File] = []
+
+    def dict(self, **kwargs):
+        return {
+            "id_message": self.id_message,
+            "id_dossier": self.id_dossier,
+            "email": self.email,
+            "body": self.body,
+            "date_creation": self.date_creation,
+            "pieces_jointes": "[" + ",".join([str(f) for f in self.pieces_jointes]) + "]"
+        }
 
 
 class Dossier(BaseModel):
@@ -198,7 +250,6 @@ class Dossier(BaseModel):
     demandeur: Optional[Demandeur]
     demarche: DemarcheRevision
     deposeParUnTiers: bool
-    messages: List[Message]
     motivation: Optional[str]
     motivationAttachment: Optional[File]
     nomMandataire: Optional[str]
@@ -211,7 +262,8 @@ class Dossier(BaseModel):
     champs: List[Champ]
     instructeurs: List[Instructeur]
     groupeInstructeur: GroupeInstructeur
-    avis: List[Avis]
+    avis: List[AvisSerializer]
+    messages: List[MessageSerializer]
 
 
 class PageInfo(BaseModel):

@@ -11,9 +11,9 @@ from utils.demandessimplifiees.constant import champs_text_db_labels, champs_che
     champs_integer_number_db_labels, champs_repetition_db_labels, champs_piece_justificative_db_labels
 from utils.demandessimplifiees.schemas import ChampType, CheckboxChamp, DateChamp, IntegerNumberChamp, TextChamp, \
     PieceJustificativeChamp, DecimalNumberChamp, MultipleDropDownListChamp, RepetitionChamp, Champ, Dossier, \
-    PreprocessedDossierSerializer, EnrichedAvis, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, \
+    PreprocessedDossierSerializer, EnrichedAvisSerializer, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, \
     ExtraitDeRegistreSerializer, \
-    DonneesPointDePrelevementSerializer
+    DonneesPointDePrelevementSerializer, EnrichedMessageSerializer
 
 
 def decode64(code: str):
@@ -172,10 +172,36 @@ def get_avis(dossiers: List[Dossier]):
     for dossier in dossiers:
         if dossier.avis:
             for curr_avis in dossier.avis:
-                new_enriched_avis_data = curr_avis.dict()
-                new_enriched_avis_data["id_dossier"] = dossier.number
-                enriched_avis.append(EnrichedAvis.validate(new_enriched_avis_data))
+                new_enriched_avis_data = {
+                    "id_dossier": dossier.number,
+                    "id_avis": curr_avis.id,
+                    "question": curr_avis.question,
+                    "reponse": curr_avis.reponse,
+                    "date_reponse": curr_avis.dateReponse,
+                    "date_question": curr_avis.dateQuestion,
+                    "claimant_email": curr_avis.claimant.email,
+                    "expert_email": curr_avis.expert.email,
+                    "pieces_jointes": curr_avis.attachments,
+                }
+                enriched_avis.append(EnrichedAvisSerializer.validate(new_enriched_avis_data))
     return enriched_avis
+
+
+def get_messages(dossiers: List[Dossier]):
+    messages = []
+    for dossier in dossiers:
+        if dossier.messages:
+            for curr_message in dossier.messages:
+                new_message_data = {
+                    "id_message": curr_message.id,
+                    "id_dossier": dossier.number,
+                    "email": curr_message.email,
+                    "body": curr_message.body,
+                    "date_creation": curr_message.createdAt,
+                    "pieces_jointes": curr_message.attachments,
+                }
+                messages.append(EnrichedMessageSerializer.validate(new_message_data))
+    return messages
 
 
 def get_releve_index(dossiers: List[Dossier]):

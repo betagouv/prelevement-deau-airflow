@@ -5,17 +5,16 @@ import uuid
 from airflow.models import BaseOperator
 
 from utils.db.session import local_session
-from utils.demandessimplifiees.models import DemarcheDataBrute
+from utils.demandessimplifiees.models import DemarcheDataBrute, Avis, Message
 from utils.demandessimplifiees.models import DonneesPointDePrelevement
 from utils.demandessimplifiees.models import ExtraitDeRegistre
 from utils.demandessimplifiees.models import PreprocessedDossier
 from utils.demandessimplifiees.models import ReleveIndex
 from utils.demandessimplifiees.models import VolumesPompes
-from utils.demandessimplifiees.services import get_demarche
+from utils.demandessimplifiees.services import get_demarche, get_avis, get_messages
 from utils.demandessimplifiees.services import get_demarche_from_demarches_simplifiees
 from utils.demandessimplifiees.services import get_donnees_point_de_prelevement
 from utils.demandessimplifiees.services import get_extrait_registre
-# from utils.demandessimplifiees.services import get_avis
 from utils.demandessimplifiees.services import get_releve_index
 from utils.demandessimplifiees.services import get_volumes_pompes
 from utils.demandessimplifiees.services import process_dossiers
@@ -40,7 +39,8 @@ class CollectDemarcheOperator(BaseOperator):
 
         demarche = get_demarche(collected_data_json)
         processed_dossiers = process_dossiers(demarche.dossiers.nodes)
-        # avis = get_avis(demarche.dossiers.nodes)
+        messages = get_messages(demarche.dossiers.nodes)
+        avis = get_avis(demarche.dossiers.nodes)
         releve_index = get_releve_index(demarche.dossiers.nodes)
         volumes_pompes = get_volumes_pompes(demarche.dossiers.nodes)
         extraits_registres = get_extrait_registre(demarche.dossiers.nodes)
@@ -56,6 +56,8 @@ class CollectDemarcheOperator(BaseOperator):
                            releve_index]
         processed_dossiers_db = [PreprocessedDossier(**ppd.dict(), demarche_data_brute_id=demarche_data_brute_id) for
                                  ppd in processed_dossiers]
+        avis_db = [Avis(**avs.dict()) for avs in avis]
+        messages_db = [Message(**msg.dict()) for msg in messages]
 
         sha256_hash.update(collected_data.encode())
         hashed_collected_data = sha256_hash.hexdigest()
@@ -87,11 +89,15 @@ class CollectDemarcheOperator(BaseOperator):
                 new_demarche_data_brute.extrait_de_registres = extraits_registres_db
                 new_demarche_data_brute.volumes_pompes = volumes_pompes_db
                 new_demarche_data_brute.releve_index = releve_index_db
+                new_demarche_data_brute.avis = avis_db
+                new_demarche_data_brute.message = messages_db
                 session.add_all(donnees_point_de_prelevement_db)
                 session.add_all(extraits_registres_db)
                 session.add_all(volumes_pompes_db)
                 session.add_all(releve_index_db)
                 session.add_all(processed_dossiers_db)
+                session.add_all(avis_db)
+                session.add_all(messages_db)
                 session.commit()
                 print(f"Data collected and saved with id {new_demarche_data_brute.id}")
             except Exception as e:
