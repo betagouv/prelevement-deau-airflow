@@ -5,10 +5,61 @@ from sqlalchemy.orm import relationship
 from utils.db.base_class import Base
 
 
+class PieceJointe(Base):
+    __tablename__ = "piece_jointe"
+    checksum = Column(String)
+    type_fichier = Column(String)
+    nom_fichier = Column(String)
+    demande_simplifiees_url = Column(String)
+    object_storage_key = Column(String)
+
+    tableurs = relationship('DonneesPointDePrelevement', secondary='fichiers_tableurs_assoc',
+                            back_populates='fichiers_tableurs')
+    autres_documents = relationship('DonneesPointDePrelevement', secondary='fichiers_autres_documents_assoc',
+                                    back_populates='fichiers_autres_documents')
+
+    registre_papier = relationship('ExtraitDeRegistre', secondary='extraits_de_registres_assoc',
+                                   back_populates='extraits_registres_papiers')
+    message = relationship('Message', secondary='message_assoc', back_populates='pieces_jointes')
+    avis = relationship('Avis', secondary='avis_assoc', back_populates='pieces_jointes')
+
+
+class FichiersTableursAssoc(Base):
+    __tablename__ = 'fichiers_tableurs_assoc'
+    donnees_point_de_prelevement_id = Column(UUID(as_uuid=True), ForeignKey('donnees_point_de_prelevement.id'),
+                                             primary_key=True)
+    piece_jointe_id = Column(UUID(as_uuid=True), ForeignKey('piece_jointe.id'), primary_key=True)
+
+
+class FichiersAutresDocumentsAssoc(Base):
+    __tablename__ = 'fichiers_autres_documents_assoc'
+    donnees_point_de_prelevement_id = Column(UUID(as_uuid=True), ForeignKey('donnees_point_de_prelevement.id'),
+                                             primary_key=True)
+    piece_jointe_id = Column(UUID(as_uuid=True), ForeignKey('piece_jointe.id'), primary_key=True)
+
+
+class ExtraitsDeRegistresAssoc(Base):
+    __tablename__ = 'extraits_de_registres_assoc'
+    extrait_de_registre_id = Column(UUID(as_uuid=True), ForeignKey('extrait_de_registre.id'), primary_key=True)
+    piece_jointe_id = Column(UUID(as_uuid=True), ForeignKey('piece_jointe.id'), primary_key=True)
+
+
+class MessageAssoc(Base):
+    __tablename__ = 'message_assoc'
+    message_id = Column(UUID(as_uuid=True), ForeignKey('message.id'), primary_key=True)
+    piece_jointe_id = Column(UUID(as_uuid=True), ForeignKey('piece_jointe.id'), primary_key=True)
+
+
+class AvisAssoc(Base):
+    __tablename__ = 'avis_assoc'
+    avis_id = Column(UUID(as_uuid=True), ForeignKey('avis.id'), primary_key=True)
+    piece_jointe_id = Column(UUID(as_uuid=True), ForeignKey('piece_jointe.id'), primary_key=True)
+
+
 class DemarcheDataBrute(Base):
     __tablename__ = "demarche_data_brute"
     hashed_collected_data = Column(String, unique=True)
-    file_path = Column(String, unique=True)
+    object_storage_key = Column(String, unique=True)
     demarche_number = Column(Integer)
 
     # PreprocessedDossier 1-N
@@ -138,7 +189,8 @@ class ExtraitDeRegistre(Base):
     demarche_data_brute = relationship("DemarcheDataBrute", back_populates="extrait_de_registres")
 
     ligne = Column(Integer)
-    extrait_registre_papier = Column(String)
+    extraits_registres_papiers = relationship('PieceJointe', secondary='extraits_de_registres_assoc',
+                                              back_populates='registre_papier')
 
 
 class DonneesPointDePrelevement(Base):
@@ -151,8 +203,9 @@ class DonneesPointDePrelevement(Base):
 
     ligne = Column(Integer)
     nom_point_prelevement = Column(String)
-    fichier_tableur = Column(String)
-    fichier_autre_document = Column(String)
+    fichiers_tableurs = relationship('PieceJointe', secondary='fichiers_tableurs_assoc', back_populates='tableurs')
+    fichiers_autres_documents = relationship('PieceJointe', secondary='fichiers_autres_documents_assoc',
+                                             back_populates='autres_documents')
 
 
 class Avis(Base):
@@ -170,7 +223,7 @@ class Avis(Base):
     date_reponse = Column(DateTime)
     claimant_email = Column(String)
     expert_email = Column(String)
-    pieces_jointes = Column(String)
+    pieces_jointes = relationship('PieceJointe', secondary='avis_assoc', back_populates='avis')
 
 
 class Message(Base):
@@ -186,4 +239,4 @@ class Message(Base):
     email = Column(String)
     body = Column(String)
     date_creation = Column(DateTime)
-    pieces_jointes = Column(String)
+    pieces_jointes = relationship('PieceJointe', secondary='message_assoc', back_populates='message')

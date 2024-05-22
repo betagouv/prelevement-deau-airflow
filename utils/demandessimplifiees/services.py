@@ -1,10 +1,12 @@
-import base64
 import copy
+import datetime
 import os
+import uuid
 from typing import List
-
 import requests
 
+from utils.common.object_storage_client import upload_file
+from utils.common.utils import decode64
 from utils.core.settings import settings
 from utils.core.tools import open_file, write_file
 from utils.demandessimplifiees.constant import champs_text_db_labels, champs_checkbox_db_labels, champs_date_db_labels, \
@@ -13,14 +15,7 @@ from utils.demandessimplifiees.schemas import ChampType, CheckboxChamp, DateCham
     PieceJustificativeChamp, DecimalNumberChamp, MultipleDropDownListChamp, RepetitionChamp, Champ, Dossier, \
     PreprocessedDossierSerializer, EnrichedAvisSerializer, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, \
     ExtraitDeRegistreSerializer, \
-    DonneesPointDePrelevementSerializer, EnrichedMessageSerializer
-
-
-def decode64(code: str):
-    encoded_string = code
-    decoded_bytes = base64.b64decode(encoded_string)
-    decoded_string = decoded_bytes.decode('utf-8')
-    return decoded_string
+    DonneesPointDePrelevementSerializer, EnrichedMessageSerializer, EnrichedFileSerializer, ListFiles
 
 
 def get_demarche_from_demarches_simplifiees(demarche_number: int) -> str:
@@ -57,6 +52,32 @@ def save_demarche_to_file(demarche_number: int, demarche: str, hashed_data: str)
     )
     write_file(path=file_path, content=demarche)
     return file_path
+
+
+def process_piece_justificative(piece_justificative: PieceJustificativeChamp | ListFiles,
+                                prefix_object_storage_key: str) -> List[
+    EnrichedFileSerializer
+]:
+    files = []
+    for pj in piece_justificative.files:
+        id = uuid.uuid4()
+        new_file = EnrichedFileSerializer.validate({
+            "id": str(id),
+            "checksum": pj.checksum,
+            "type_fichier": pj.contentType,
+            "nom_fichier": pj.filename,
+            "demande_simplifiees_url": pj.url,
+            "object_storage_key": f"{prefix_object_storage_key}{id}__{pj.filename}"
+        })
+        response = requests.get(pj.url)
+        upload_file(
+            settings.SCW_S3_BUCKET,
+            new_file.object_storage_key,
+            response.content,
+            acl="bucket-owner-read"
+        )
+        files.append(new_file)
+    return files
 
 
 def champ_to_pytandic(champ: dict):
@@ -154,8 +175,9 @@ def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
         elif decode64(champ.champDescriptorId) in champs_piece_justificative_db_labels:
             pass
         else:
-            print(decode64(champ.champDescriptorId))
-            print(champ)
+            pass
+            # print(decode64(champ.champDescriptorId))
+            # print(champ)
     return PreprocessedDossierSerializer.validate(data)
 
 
@@ -169,6 +191,7 @@ def process_dossiers(dossiers: List[Dossier]):
 
 def get_avis(dossiers: List[Dossier]):
     enriched_avis = []
+    now = datetime.datetime.now()
     for dossier in dossiers:
         if dossier.avis:
             for curr_avis in dossier.avis:
@@ -181,7 +204,9 @@ def get_avis(dossiers: List[Dossier]):
                     "date_question": curr_avis.dateQuestion,
                     "claimant_email": curr_avis.claimant.email,
                     "expert_email": curr_avis.expert.email,
-                    "pieces_jointes": curr_avis.attachments,
+                    "pieces_jointes": process_piece_justificative(
+                        ListFiles(files=curr_avis.attachments),
+                        f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{dossier.number}/avis/"),
                 }
                 enriched_avis.append(EnrichedAvisSerializer.validate(new_enriched_avis_data))
     return enriched_avis
@@ -189,6 +214,7 @@ def get_avis(dossiers: List[Dossier]):
 
 def get_messages(dossiers: List[Dossier]):
     messages = []
+    now = datetime.datetime.now()
     for dossier in dossiers:
         if dossier.messages:
             for curr_message in dossier.messages:
@@ -198,7 +224,10 @@ def get_messages(dossiers: List[Dossier]):
                     "email": curr_message.email,
                     "body": curr_message.body,
                     "date_creation": curr_message.createdAt,
-                    "pieces_jointes": curr_message.attachments,
+                    "pieces_jointes": process_piece_justificative(
+                        ListFiles(files=curr_message.attachments),
+                        f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{dossier.number}/messages/")
+                    ,
                 }
                 messages.append(EnrichedMessageSerializer.validate(new_message_data))
     return messages
@@ -258,6 +287,7 @@ def get_volumes_pompes(dossiers: List[Dossier]):
 
 def get_extrait_registre(dossiers: List[Dossier]):
     extrait_registre_list = []
+    now = datetime.datetime.now()
     for dossier in dossiers:
         for champ in dossier.champs:
             if decode64(champ.champDescriptorId) != "Champ-3915100":
@@ -272,7 +302,9 @@ def get_extrait_registre(dossiers: List[Dossier]):
                 }
                 for row_champ in row.champs:
                     if decode64(row_champ.champDescriptorId) == "Champ-3915102":
-                        new_extrait_registre["extrait_registre_papier"] = row_champ
+                        new_extrait_registre["extraits_registres_papiers"] = process_piece_justificative(
+                            row_champ,
+                            f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{dossier.number}/extraits_registres_papiers/")
 
                 extrait_registre_list.append(ExtraitDeRegistreSerializer.validate(new_extrait_registre))
     return extrait_registre_list
@@ -280,6 +312,7 @@ def get_extrait_registre(dossiers: List[Dossier]):
 
 def get_donnees_point_de_prelevement(dossiers: List[Dossier]):
     donnees_point_de_prelevement_list = []
+    now = datetime.datetime.now()
     for dossier in dossiers:
         for champ in dossier.champs:
             if decode64(champ.champDescriptorId) != "Champ-3642783":
@@ -296,9 +329,14 @@ def get_donnees_point_de_prelevement(dossiers: List[Dossier]):
                     if decode64(row_champ.champDescriptorId) == "Champ-4017191":
                         new_donnees_point_de_prelevement["nom_point_prelevement"] = row_champ.values
                     if decode64(row_champ.champDescriptorId) == "Champ-3642817":
-                        new_donnees_point_de_prelevement["fichier_tableur"] = row_champ
+                        new_donnees_point_de_prelevement["fichiers_tableurs"] = process_piece_justificative(
+                            row_champ,
+                            f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{dossier.number}/fichier_tableur/")
                     if decode64(row_champ.champDescriptorId) == "Champ-4017531":
-                        new_donnees_point_de_prelevement["fichier_autre_document"] = row_champ
+                        new_donnees_point_de_prelevement["fichiers_autres_documents"] = process_piece_justificative(
+                            row_champ,
+                            f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{dossier.number}/fichier_autre_document/")
                 donnees_point_de_prelevement_list.append(
-                    DonneesPointDePrelevementSerializer.validate(new_donnees_point_de_prelevement))
+                    DonneesPointDePrelevementSerializer.validate(new_donnees_point_de_prelevement)
+                )
     return donnees_point_de_prelevement_list

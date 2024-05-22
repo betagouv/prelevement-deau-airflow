@@ -4,8 +4,10 @@ import uuid
 
 from airflow.models import BaseOperator
 
+from utils.common.object_storage_client import upload_file
+from utils.core.settings import settings
 from utils.db.session import local_session
-from utils.demandessimplifiees.models import DemarcheDataBrute, Avis, Message
+from utils.demandessimplifiees.models import DemarcheDataBrute, Avis, Message, PieceJointe
 from utils.demandessimplifiees.models import DonneesPointDePrelevement
 from utils.demandessimplifiees.models import ExtraitDeRegistre
 from utils.demandessimplifiees.models import PreprocessedDossier
@@ -18,9 +20,6 @@ from utils.demandessimplifiees.services import get_extrait_registre
 from utils.demandessimplifiees.services import get_releve_index
 from utils.demandessimplifiees.services import get_volumes_pompes
 from utils.demandessimplifiees.services import process_dossiers
-from utils.demandessimplifiees.services import (
-    save_demarche_to_file,
-)
 
 
 class CollectDemarcheOperator(BaseOperator):
@@ -45,19 +44,43 @@ class CollectDemarcheOperator(BaseOperator):
         volumes_pompes = get_volumes_pompes(demarche.dossiers.nodes)
         extraits_registres = get_extrait_registre(demarche.dossiers.nodes)
         donnees_point_de_prelevement = get_donnees_point_de_prelevement(demarche.dossiers.nodes)
+
         donnees_point_de_prelevement_db = [
-            DonneesPointDePrelevement(**dpp.dict(), demarche_data_brute_id=demarche_data_brute_id) for dpp in
+            DonneesPointDePrelevement(
+                id_dossier=dpp.id_dossier,
+                ligne=dpp.ligne,
+                nom_point_prelevement=dpp.nom_point_prelevement,
+                demarche_data_brute_id=demarche_data_brute_id,
+                fichiers_tableurs=[PieceJointe(**fichier.dict()) for fichier in dpp.fichiers_tableurs],
+                fichiers_autres_documents=[PieceJointe(**fichier.dict()) for fichier in dpp.fichiers_autres_documents]
+            ) for dpp in
             donnees_point_de_prelevement]
-        extraits_registres_db = [ExtraitDeRegistre(**er.dict(), demarche_data_brute_id=demarche_data_brute_id) for er in
-                                 extraits_registres]
+
+        extraits_registres_db = [ExtraitDeRegistre(
+            id_dossier=er.id_dossier,
+            ligne=er.ligne,
+            extraits_registres_papiers=[PieceJointe(**fichier.dict()) for fichier in er.extraits_registres_papiers],
+            demarche_data_brute_id=demarche_data_brute_id
+        ) for er in
+            extraits_registres]
         volumes_pompes_db = [VolumesPompes(**vp.dict(), demarche_data_brute_id=demarche_data_brute_id) for vp in
                              volumes_pompes]
         releve_index_db = [ReleveIndex(**ri.dict(), demarche_data_brute_id=demarche_data_brute_id) for ri in
                            releve_index]
         processed_dossiers_db = [PreprocessedDossier(**ppd.dict(), demarche_data_brute_id=demarche_data_brute_id) for
                                  ppd in processed_dossiers]
-        avis_db = [Avis(**avs.dict()) for avs in avis]
-        messages_db = [Message(**msg.dict()) for msg in messages]
+        avis_db = [Avis(
+            **{
+                **avs.dict(),
+                "demarche_data_brute_id": demarche_data_brute_id,
+                "pieces_jointes": [PieceJointe(**fichier.dict()) for fichier in avs.pieces_jointes]
+            }
+        ) for avs in avis]
+        messages_db = [Message(**{
+            **msg.dict(),
+            "demarche_data_brute_id": demarche_data_brute_id,
+            "pieces_jointes": [PieceJointe(**fichier.dict()) for fichier in msg.pieces_jointes]
+        }) for msg in messages]
 
         sha256_hash.update(collected_data.encode())
         hashed_collected_data = sha256_hash.hexdigest()
@@ -72,13 +95,16 @@ class CollectDemarcheOperator(BaseOperator):
                 ):
                     print("Data already collected")
                     return
-                file_path = save_demarche_to_file(
-                    self.demarche_number, collected_data, hashed_collected_data
+                demarche_data_object_storage_key = f"demandes_simplifiees/demarche_data_brute/{hashed_collected_data}__{self.demarche_number}.json"
+                upload_file(
+                    bucket_name=settings.SCW_S3_BUCKET,
+                    key=demarche_data_object_storage_key,
+                    body=collected_data
                 )
                 new_demarche_data_brute = DemarcheDataBrute(
                     id=demarche_data_brute_id,
                     hashed_collected_data=hashed_collected_data,
-                    file_path=file_path,
+                    object_storage_key=demarche_data_object_storage_key,
                     demarche_number=self.demarche_number
                 )
                 print("Data is created")

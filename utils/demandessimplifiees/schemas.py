@@ -1,8 +1,8 @@
 import datetime
 import enum
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 
 class DossierState(enum.Enum):
@@ -70,7 +70,7 @@ class DemarcheRevision(BaseModel):
     revision: Revision
 
 
-class File(BaseModel):
+class FileSerializer(BaseModel):
     checksum: str
     contentType: str
     createdAt: datetime.datetime
@@ -90,9 +90,18 @@ class File(BaseModel):
         return str(self.dict())
 
 
+class EnrichedFileSerializer(BaseModel):
+    id: str
+    checksum: str
+    type_fichier: str
+    nom_fichier: str
+    demande_simplifiees_url: str
+    object_storage_key: str
+
+
 class MessageSerializer(BaseModel):
     id: str
-    attachments: List[File]
+    attachments: List[FileSerializer]
     body: str
     createdAt: datetime.datetime
     email: str
@@ -110,9 +119,9 @@ class Profile(BaseModel):
 
 
 class BasicChamp(BaseModel):
-    id: str
-    champDescriptorId: str
-    label: str
+    id: Optional[str]
+    champDescriptorId: Optional[str]
+    label: Optional[str]
     stringValue: Optional[str] = None  # Make stringValue optional
     updatedAt: datetime.datetime
     prefilled: bool
@@ -140,10 +149,14 @@ class IntegerNumberChamp(BasicChamp):
 
 
 class PieceJustificativeChamp(BasicChamp):
-    files: List[File]
+    files: List[FileSerializer]
 
     def __str__(self):
         return "[" + ";".join([str(f) for f in self.files]) + "]"
+
+
+class ListFiles(BaseModel):
+    files: List[FileSerializer]
 
 
 class MultipleDropDownListChamp(BasicChamp):
@@ -188,7 +201,7 @@ class AvisSerializer(BaseModel):
     dateReponse: Optional[datetime.datetime] = None
     claimant: Profile
     expert: Profile
-    attachments: List[File] = []
+    attachments: List[EnrichedFileSerializer] = []
 
 
 class EnrichedAvisSerializer(BaseModel):
@@ -200,7 +213,7 @@ class EnrichedAvisSerializer(BaseModel):
     date_reponse: Optional[datetime.datetime] = None
     claimant_email: str
     expert_email: str
-    pieces_jointes: List[File] = []
+    pieces_jointes: List[EnrichedFileSerializer] = []
 
     def dict(self, **kwargs):
         return {
@@ -222,7 +235,7 @@ class EnrichedMessageSerializer(BaseModel):
     email: str
     body: str
     date_creation: datetime.datetime
-    pieces_jointes: List[File] = []
+    pieces_jointes: List[EnrichedFileSerializer] = []
 
     def dict(self, **kwargs):
         return {
@@ -251,10 +264,10 @@ class Dossier(BaseModel):
     demarche: DemarcheRevision
     deposeParUnTiers: bool
     motivation: Optional[str]
-    motivationAttachment: Optional[File]
+    motivationAttachment: Optional[FileSerializer]
     nomMandataire: Optional[str]
     prenomMandataire: Optional[str]
-    pdf: Optional[File]
+    pdf: Optional[FileSerializer]
     prefilled: bool
     state: DossierState
     traitements: List[Traitement]
@@ -581,13 +594,13 @@ class ExtraitDeRegistreSerializer(BaseModel):
     ligne: int
     # Champ-3915102
     # Extrait de registre
-    extrait_registre_papier: PieceJustificativeChamp
+    extraits_registres_papiers: List[EnrichedFileSerializer] = []
 
     def dict(self, **kwargs):
         return {
             "id_dossier": self.id_dossier,
             "ligne": self.ligne,
-            "extrait_registre_papier": str(self.extrait_registre_papier),
+            "extraits_registres_papiers": str(self.extraits_registres_papiers),
         }
 
 
@@ -601,16 +614,16 @@ class DonneesPointDePrelevementSerializer(BaseModel):
     nom_point_prelevement: List[str] = []
     # Champ-3642817
     # Données standardisées
-    fichier_tableur: PieceJustificativeChamp
+    fichiers_tableurs: List[EnrichedFileSerializer] = []
     # Champ-4017531
     # Autres documents
-    fichier_autre_document: PieceJustificativeChamp
+    fichiers_autres_documents: List[EnrichedFileSerializer] = []
 
     def dict(self, **kwargs):
         return {
             "id_dossier": self.id_dossier,
             "ligne": self.ligne,
             "nom_point_prelevement": self.nom_point_prelevement,
-            "fichier_tableur": str(self.fichier_tableur),
-            "fichier_autre_document": str(self.fichier_autre_document),
+            "fichiers_tableurs": str(self.fichiers_tableurs),
+            "fichiers_autres_documents": str(self.fichiers_autres_documents),
         }
