@@ -1,7 +1,7 @@
 champs_text_db_labels = {
     'Champ-3642770': 'coordonnees',
     'Champ-3642774': 'adresse_email_declarant',
-    'Champ-3642775': 'numero_telephone',
+    'Champ-3642775': 'numero_telephone_declarant',
     'Champ-3642777': 'statut_declarant',
     'Champ-3642778': 'raison_sociale_structure',
     'Champ-3888472': 'type_prelevement',

@@ -7,19 +7,19 @@ from airflow.models import BaseOperator
 from utils.common.object_storage_client import upload_file
 from utils.core.settings import settings
 from utils.db.session import local_session
-from utils.demandessimplifiees.models import DemarcheDataBrute, Avis, Message, PieceJointe
-from utils.demandessimplifiees.models import DonneesPointDePrelevement
-from utils.demandessimplifiees.models import ExtraitDeRegistre
-from utils.demandessimplifiees.models import PreprocessedDossier
-from utils.demandessimplifiees.models import ReleveIndex
-from utils.demandessimplifiees.models import VolumesPompes
-from utils.demandessimplifiees.services import get_demarche, get_avis, get_messages
-from utils.demandessimplifiees.services import get_demarche_from_demarches_simplifiees
-from utils.demandessimplifiees.services import get_donnees_point_de_prelevement
-from utils.demandessimplifiees.services import get_extrait_registre
-from utils.demandessimplifiees.services import get_releve_index
-from utils.demandessimplifiees.services import get_volumes_pompes
-from utils.demandessimplifiees.services import process_dossiers
+from utils.demarchessimplifiees.models import DemarcheDataBrute, Avis, Message, PieceJointe
+from utils.demarchessimplifiees.models import DonneesPointDePrelevement
+from utils.demarchessimplifiees.models import ExtraitDeRegistre
+from utils.demarchessimplifiees.models import PreprocessedDossier
+from utils.demarchessimplifiees.models import ReleveIndex
+from utils.demarchessimplifiees.models import VolumesPompes
+from utils.demarchessimplifiees.services import get_demarche, get_avis, get_messages
+from utils.demarchessimplifiees.services import get_demarche_from_demarches_simplifiees
+from utils.demarchessimplifiees.services import get_donnees_point_de_prelevement
+from utils.demarchessimplifiees.services import get_extrait_registre
+from utils.demarchessimplifiees.services import get_releve_index
+from utils.demarchessimplifiees.services import get_volumes_pompes
+from utils.demarchessimplifiees.services import process_dossiers
 
 
 class CollectDemarcheOperator(BaseOperator):
@@ -67,8 +67,16 @@ class CollectDemarcheOperator(BaseOperator):
                              volumes_pompes]
         releve_index_db = [ReleveIndex(**ri.dict(), demarche_data_brute_id=demarche_data_brute_id) for ri in
                            releve_index]
-        processed_dossiers_db = [PreprocessedDossier(**ppd.dict(), demarche_data_brute_id=demarche_data_brute_id) for
-                                 ppd in processed_dossiers]
+        processed_dossiers_db = [
+
+            PreprocessedDossier(
+                **{
+                    **ppd.dict(),
+                    "demarche_data_brute_id": demarche_data_brute_id,
+                    "fichier_tableau_suivi_camion_citerne": [PieceJointe(**fichier.dict()) for fichier in ppd.fichier_tableau_suivi_camion_citerne]
+                }
+            ) for
+            ppd in processed_dossiers]
         avis_db = [Avis(
             **{
                 **avs.dict(),
@@ -78,6 +86,7 @@ class CollectDemarcheOperator(BaseOperator):
         ) for avs in avis]
         messages_db = [Message(**{
             **msg.dict(),
+
             "demarche_data_brute_id": demarche_data_brute_id,
             "pieces_jointes": [PieceJointe(**fichier.dict()) for fichier in msg.pieces_jointes]
         }) for msg in messages]

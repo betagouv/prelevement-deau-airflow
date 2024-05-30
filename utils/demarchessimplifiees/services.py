@@ -9,9 +9,9 @@ from utils.common.object_storage_client import upload_file
 from utils.common.utils import decode64
 from utils.core.settings import settings
 from utils.core.tools import open_file, write_file
-from utils.demandessimplifiees.constant import champs_text_db_labels, champs_checkbox_db_labels, champs_date_db_labels, \
+from utils.demarchessimplifiees.constant import champs_text_db_labels, champs_checkbox_db_labels, champs_date_db_labels, \
     champs_integer_number_db_labels, champs_repetition_db_labels, champs_piece_justificative_db_labels
-from utils.demandessimplifiees.schemas import ChampType, CheckboxChamp, DateChamp, IntegerNumberChamp, TextChamp, \
+from utils.demarchessimplifiees.schemas import ChampType, CheckboxChamp, DateChamp, IntegerNumberChamp, TextChamp, \
     PieceJustificativeChamp, DecimalNumberChamp, MultipleDropDownListChamp, RepetitionChamp, Champ, Dossier, \
     PreprocessedDossierSerializer, EnrichedAvisSerializer, ReleveIndexSerializer, VolumesPompesSerializer, Demarche, \
     ExtraitDeRegistreSerializer, \
@@ -22,7 +22,7 @@ def get_demarche_from_demarches_simplifiees(demarche_number: int) -> str:
     query = open_file(
         path=os.path.join(
             os.getenv("AIRFLOW_HOME"),
-            "utils/demandessimplifiees/gql_queries/get_queries.gql",
+            "utils/demarchessimplifiees/gql_queries/get_queries.gql",
         )
     )
     response = requests.post(
@@ -66,7 +66,7 @@ def process_piece_justificative(piece_justificative: PieceJustificativeChamp | L
             "checksum": pj.checksum,
             "type_fichier": pj.contentType,
             "nom_fichier": pj.filename,
-            "demande_simplifiees_url": pj.url,
+            "demarches_simplifiees_url": pj.url,
             "object_storage_key": f"{prefix_object_storage_key}{id}__{pj.filename}"
         })
         response = requests.get(pj.url)
@@ -125,6 +125,7 @@ def get_demarche(demarches_simplfiees_data: dict):
 
 
 def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
+    now = datetime.datetime.now()
     data = {}
     # ID
     data["id_dossier"] = current_dossier.number
@@ -172,8 +173,10 @@ def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
             data[champs_integer_number_db_labels[decode64(champ.champDescriptorId)]] = int(champ.stringValue)
         elif decode64(champ.champDescriptorId) in champs_repetition_db_labels:
             pass
-        elif decode64(champ.champDescriptorId) in champs_piece_justificative_db_labels:
-            pass
+        elif decode64(champ.champDescriptorId) == "Champ-3988475":
+            data["fichier_tableau_suivi_camion_citerne"] = process_piece_justificative(
+                champ,
+                f"demandes_simplifiees/{now.strftime('%Y-%m-%d')}/{current_dossier.number}/fichier_tableau_suivi_camion_citerne/")
         else:
             pass
             # print(decode64(champ.champDescriptorId))

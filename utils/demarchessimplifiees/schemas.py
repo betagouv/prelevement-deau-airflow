@@ -95,7 +95,7 @@ class EnrichedFileSerializer(BaseModel):
     checksum: str
     type_fichier: str
     nom_fichier: str
-    demande_simplifiees_url: str
+    demarches_simplifiees_url: str
     object_storage_key: str
 
 
@@ -357,7 +357,7 @@ class PreprocessedDossierSerializer(BaseModel):
     adresse_email_declarant: str = ""
     # Champ-3642775
     # Numéro de téléphone
-    numero_telephone: str = ""
+    numero_telephone_declarant: str = ""
     # Champ-3642777
     # Vous formulez cette déclaration en tant que :
     statut_declarant: str = ""
@@ -479,6 +479,10 @@ class PreprocessedDossierSerializer(BaseModel):
     # Nom du point de prélèvement concerné par la déclaration
     nom_point_prelevement: Union[str, List[str]] = ""
 
+    # Champ-3988475
+    # Tableau de suivi
+    fichier_tableau_suivi_camion_citerne: List[EnrichedFileSerializer] = []
+
     def dict(self):
         return {
             "id_dossier": self.id_dossier,
@@ -500,7 +504,7 @@ class PreprocessedDossierSerializer(BaseModel):
             "groupe_instructeur": self.groupe_instructeur,
             "coordonnees": self.coordonnees,
             "adresse_email_declarant": self.adresse_email_declarant,
-            "numero_telephone": self.numero_telephone,
+            "numero_telephone_declarant": self.numero_telephone_declarant,
             "statut_declarant": self.statut_declarant,
             "raison_sociale_structure": self.raison_sociale_structure,
             "type_prelevement": self.type_prelevement,
@@ -533,7 +537,9 @@ class PreprocessedDossierSerializer(BaseModel):
             "date_debut_periode_declaree": self.date_debut_periode_declaree,
             "date_fin_periode_declaree": self.date_fin_periode_declaree,
             "annee_prelevement_camion_citerne": self.annee_prelevement_camion_citerne,
-            "nom_point_prelevement": self.nom_point_prelevement
+            "nom_point_prelevement": self.nom_point_prelevement,
+            "fichier_tableau_suivi_camion_citerne": str(self.fichier_tableau_suivi_camion_citerne),
+
         }
 
 
