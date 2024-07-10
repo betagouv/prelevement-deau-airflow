@@ -2,9 +2,9 @@ import datetime
 
 from airflow import DAG
 
-from utils.demarchessimplifiees.tasks import (
+from utils.demarchessimplifiees.data_extractions.tasks import CollectDemarcheOperator
+from utils.demarchessimplifiees.standard_files_extractions.tasks import (
     CollectCiterneData,
-    CollectDemarcheOperator,
     CollectPrelevementData,
 )
 
@@ -12,6 +12,7 @@ with DAG(
     dag_id="dag_collect_demarche_prelevement_deau",
     start_date=datetime.datetime(2024, 4, 24),
     schedule="@weekly",
+    catchup=False,
 ):
     collect_demarches_simplifiees = CollectDemarcheOperator(
         task_id="CollectDemarche", demarche_number=80149

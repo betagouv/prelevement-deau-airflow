@@ -7,6 +7,7 @@ with DAG(
     dag_id="dag_hello_world",
     start_date=datetime.datetime(2021, 1, 1),
     schedule="@daily",
+    catchup=False,  # Empêche le backfill
 ):
     EmptyOperator(task_id="task")
     print("hello world")

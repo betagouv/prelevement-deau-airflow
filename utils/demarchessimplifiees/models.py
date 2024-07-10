@@ -5,6 +5,81 @@ from sqlalchemy.orm import relationship
 from utils.db.base_class import Base
 
 
+class DemarcheDataBrute(Base):
+    __tablename__ = "demarche_data_brute"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True)
+
+    hashed_collected_data = Column(
+        String, unique=True, comment="Le hash du fichier de snapshot."
+    )
+    object_storage_key = Column(
+        String, unique=True, comment="La cle du fichier de snapshot dans le bucket."
+    )
+    demarche_number = Column(Integer)
+
+    # PreprocessedDossier 1-N
+    dossiers = relationship("PreprocessedDossier", back_populates="demarche_data_brute")
+
+    # VolumesPompes 1-N
+    volumes_pompes = relationship("VolumesPompes", back_populates="demarche_data_brute")
+
+    # ExtraitDeRegistre 1-N
+    extrait_de_registres = relationship(
+        "ExtraitDeRegistre", back_populates="demarche_data_brute"
+    )
+
+    # DonneesPointDePrelevement 1-N
+    donnees_point_de_prelevements = relationship(
+        "DonneesPointDePrelevement", back_populates="demarche_data_brute"
+    )
+
+    # ReleveIndex 1-N
+    releve_index = relationship("ReleveIndex", back_populates="demarche_data_brute")
+
+    # Avis 1-N
+    avis = relationship("Avis", back_populates="demarche_data_brute")
+
+    # Message 1-N
+    message = relationship("Message", back_populates="demarche_data_brute")
+
+    # CiterneReleve 1-N
+    citerne_releve = relationship("CiterneReleve", back_populates="demarche_data_brute")
+
+    # PrelevementReleve 1-N
+    prelevement_releve = relationship(
+        "PrelevementReleve", back_populates="demarche_data_brute"
+    )
+
+
+class DonneesPointDePrelevement(Base):
+    __tablename__ = "donnees_point_de_prelevement"
+
+    id_dossier = Column(Integer)
+
+    # DemarcheDataBrute 1-N
+    demarche_data_brute_id = Column(
+        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
+    )
+    demarche_data_brute = relationship(
+        "DemarcheDataBrute", back_populates="donnees_point_de_prelevements"
+    )
+
+    ligne = Column(
+        Integer,
+        comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",
+    )
+    nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
+    fichiers_tableurs = relationship(
+        "PieceJointe", secondary="fichiers_tableurs_assoc", back_populates="tableurs"
+    )
+    fichiers_autres_documents = relationship(
+        "PieceJointe",
+        secondary="fichiers_autres_documents_assoc",
+        back_populates="autres_documents",
+    )
+
+
 class PieceJointe(Base):
     __tablename__ = "piece_jointe"
     checksum = Column(String, comment="Checksum du fichier.")
@@ -119,50 +194,6 @@ class DossierFichierTableauSuiviCamionCiterneAssoc(Base):
     )
 
 
-class DemarcheDataBrute(Base):
-    __tablename__ = "demarche_data_brute"
-    hashed_collected_data = Column(
-        String, unique=True, comment="Le hash du fichier de snapshot."
-    )
-    object_storage_key = Column(
-        String, unique=True, comment="La cle du fichier de snapshot dans le bucket."
-    )
-    demarche_number = Column(Integer)
-
-    # PreprocessedDossier 1-N
-    dossiers = relationship("PreprocessedDossier", back_populates="demarche_data_brute")
-
-    # VolumesPompes 1-N
-    volumes_pompes = relationship("VolumesPompes", back_populates="demarche_data_brute")
-
-    # ExtraitDeRegistre 1-N
-    extrait_de_registres = relationship(
-        "ExtraitDeRegistre", back_populates="demarche_data_brute"
-    )
-
-    # DonneesPointDePrelevement 1-N
-    donnees_point_de_prelevements = relationship(
-        "DonneesPointDePrelevement", back_populates="demarche_data_brute"
-    )
-
-    # ReleveIndex 1-N
-    releve_index = relationship("ReleveIndex", back_populates="demarche_data_brute")
-
-    # Avis 1-N
-    avis = relationship("Avis", back_populates="demarche_data_brute")
-
-    # Message 1-N
-    message = relationship("Message", back_populates="demarche_data_brute")
-
-    # CiterneReleve 1-N
-    citerne_releve = relationship("CiterneReleve", back_populates="demarche_data_brute")
-
-    # PrelevementReleve 1-N
-    prelevement_releve = relationship(
-        "PrelevementReleve", back_populates="demarche_data_brute"
-    )
-
-
 class PreprocessedDossier(Base):
     __tablename__ = "dossier"
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
@@ -269,6 +300,70 @@ class PreprocessedDossier(Base):
         comment="Pour les camions citernes, année de prélèvement (permet de définir le niveau de précision attendu dans la déclaration)",
     )
 
+    prelevement_points_autorises_aot_2023 = Column(
+        Boolean,
+        comment="Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?",
+    )
+    rappel_obligation_mensuelle_declaration = Column(
+        Boolean,
+        comment="Souhaiteriez-vous recevoir le 1er de chaque mois un mail vous rappelant l'obligation mensuelle de déclaration ?",
+    )
+    acceptation_contact_deal = Column(
+        Boolean,
+        comment="Accepteriez-vous d’être recontacté.e par la DEAL pour échanger davantage sur le sujet ?",
+    )
+
+    mois_prelevement_camion_citerne = Column(
+        String,
+        comment="En quel mois les prélèvements que vous allez déclarer ont-ils été réalisés ?",
+    )
+    note_facilite_utilisation = Column(
+        String,
+        comment="Donnez une note sur la facilité de prise en main de l’outil démarches simplifiées",
+    )
+    remarque_note = Column(
+        String, comment="Souhaitez-vous apporter une remarque à cette note ?"
+    )
+    temps_remplissage_questionnaire = Column(
+        String, comment="Combien de temps avez-vous passé à remplir ce questionnaire ?"
+    )
+    amelioration_temps_remplissage = Column(
+        String,
+        comment="Avez-vous une idée ce que qui pourrait être amélioré pour réduire ce temps ?",
+    )
+    temps_formatage_donnees = Column(
+        String,
+        comment="Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?",
+    )
+    televersement_tableur_brutes = Column(
+        String,
+        comment="Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ?",
+    )
+    acces_formulaire = Column(
+        String, comment="Comment cette personne a-t-elle eu accès au formulaire ?"
+    )
+    declarant_demarche_simplifiee = Column(
+        String,
+        comment="Qui est la personne qui a fait la déclaration sur Démarches Simplifiées ?",
+    )
+    raison_non_declaration_preleveur = Column(
+        String,
+        comment="Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?",
+    )
+    demande_documentation = Column(
+        String,
+        comment="Souhaiteriez-vous disposer d’une documentation sur le remplissage de ce formulaire et la façon de remplir le modèle de tableau de données ?",
+    )
+    amelioration_documentation = Column(
+        String,
+        comment="Sous quelle forme une documentation d’utilisation vous semble la plus utile ?",
+    )
+    suggestion_informations_visualisation = Column(
+        String,
+        comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données, "
+        + "et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
+    )
+
     fichier_tableau_suivi_camion_citerne = relationship(
         "PieceJointe", secondary="dossier_fichier_tableau_suivi_camion_citerne_assoc"
     )
@@ -357,33 +452,6 @@ class ExtraitDeRegistre(Base):
     )
 
 
-class DonneesPointDePrelevement(Base):
-    __tablename__ = "donnees_point_de_prelevement"
-    id_dossier = Column(Integer)
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="donnees_point_de_prelevements"
-    )
-
-    ligne = Column(
-        Integer,
-        comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",
-    )
-    nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
-    fichiers_tableurs = relationship(
-        "PieceJointe", secondary="fichiers_tableurs_assoc", back_populates="tableurs"
-    )
-    fichiers_autres_documents = relationship(
-        "PieceJointe",
-        secondary="fichiers_autres_documents_assoc",
-        back_populates="autres_documents",
-    )
-
-
 class Avis(Base):
     __tablename__ = "avis"
     id_dossier = Column(Integer, comment="Identifiant unique du dossier")
@@ -447,6 +515,7 @@ class CiterneReleve(Base):
 
 class PrelevementReleve(Base):
     __tablename__ = "prelevement_releve"
+
     id_dossier = Column(Integer, comment="Identifiant unique du dossier")
 
     # DemarcheDataBrute 1-N

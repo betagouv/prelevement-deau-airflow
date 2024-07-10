@@ -1,42 +1,34 @@
 import hashlib
 import json
+import logging
 import uuid
 
-import numpy as np
-import pandas as pd
 from airflow.models import BaseOperator
-from sqlalchemy import select
 
 from utils.common.object_storage_client import upload_file
 from utils.core.settings import settings
 from utils.db.session import local_session
+from utils.demarchessimplifiees.data_extractions.services import (
+    get_avis,
+    get_demarche,
+    get_demarche_from_demarches_simplifiees,
+    get_donnees_point_de_prelevement,
+    get_extrait_registre,
+    get_messages,
+    get_releve_index,
+    get_volumes_pompes,
+    process_dossiers,
+)
 from utils.demarchessimplifiees.models import (
     Avis,
-    CiterneReleve,
     DemarcheDataBrute,
     DonneesPointDePrelevement,
     ExtraitDeRegistre,
     Message,
     PieceJointe,
-    PrelevementReleve,
     PreprocessedDossier,
     ReleveIndex,
     VolumesPompes,
-)
-from utils.demarchessimplifiees.services import (
-    get_avis,
-    get_demarche,
-    get_demarche_from_demarches_simplifiees,
-    get_donnees_point_de_prelevement,
-    get_donnees_point_de_prelevement_by_ddb_id,
-    get_extrait_registre,
-    get_messages,
-    get_preprocessed_dossier,
-    get_releve_index,
-    get_volumes_pompes,
-    process_dossiers,
-    process_standard_v1_file,
-    process_standard_v2_file,
 )
 
 
@@ -153,7 +145,7 @@ class CollectDemarcheOperator(BaseOperator):
                     )
                     .first()
                 ):
-                    print("Data already collected")
+                    logging.info("Data already collected")
                     return
                 demarche_data_object_storage_key = f"demandes_simplifiees/demarche_data_brute/{hashed_collected_data}__{self.demarche_number}.json"
                 upload_file(
@@ -167,7 +159,7 @@ class CollectDemarcheOperator(BaseOperator):
                     object_storage_key=demarche_data_object_storage_key,
                     demarche_number=self.demarche_number,
                 )
-                print("Data is created")
+                logging.info("Data is created")
                 session.add(new_demarche_data_brute)
                 session.commit()
                 session.refresh(new_demarche_data_brute)
@@ -187,9 +179,11 @@ class CollectDemarcheOperator(BaseOperator):
                 session.add_all(avis_db)
                 session.add_all(messages_db)
                 session.commit()
-                print(f"Data collected and saved with id {new_demarche_data_brute.id}")
+                logging.info(
+                    f"Data collected and saved with id {new_demarche_data_brute.id}"
+                )
             except Exception as e:
-                print(f"Error while saving data: {e}")
+                logging.error(f"Error while saving data: {e}")
                 session.rollback()
                 raise e
             finally:
@@ -198,102 +192,3 @@ class CollectDemarcheOperator(BaseOperator):
         context["ti"].xcom_push(
             key="demarche_data_brute_id", value=str(demarche_data_brute_id)
         )
-
-
-class CollectCiterneData(BaseOperator):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-    def execute(self, context):
-        demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-        with local_session() as session:
-            df = pd.DataFrame()
-            query = select(PreprocessedDossier).where(
-                PreprocessedDossier.demarche_data_brute_id == demarche_data_brute_id
-            )
-            for result in session.execute(query):
-                dossier = result[0]
-                if dossier.fichier_tableau_suivi_camion_citerne:
-                    for file in dossier.fichier_tableau_suivi_camion_citerne:
-                        result = process_standard_v1_file(dossier, file)
-                        if result is not None:
-                            df = pd.concat([df, result])
-
-            df = df[df.date_releve.notna()]
-            if not df.empty:
-                citernes_releves = df.apply(
-                    lambda x: CiterneReleve(
-                        date_releve=x["date_releve"],
-                        point_prelevement=x["point_prelevement"],
-                        volume=x["volume"],
-                        demarche_data_brute_id=x["demarche_data_brute_id"],
-                        id_dossier=x["id_dossier"],
-                    ),
-                    axis=1,
-                )
-                session.add_all(citernes_releves)
-                session.commit()
-
-
-class CollectPrelevementData(BaseOperator):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-    def execute(self, context):
-        demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-        with local_session() as session:
-            donnees_point_de_prelevement_entries = (
-                get_donnees_point_de_prelevement_by_ddb_id(
-                    session, demarche_data_brute_id
-                )
-            )
-            if not donnees_point_de_prelevement_entries:
-                print("Aucun point de prélèvement trouvé")
-
-            prelevements = []
-            for result in donnees_point_de_prelevement_entries:
-                current_donnees_point_de_prelevement = result[0]
-                dossier_tuple = get_preprocessed_dossier(
-                    session,
-                    demarche_data_brute_id,
-                    current_donnees_point_de_prelevement.id_dossier,
-                )
-                dossier = dossier_tuple[0] if dossier_tuple else None
-
-                if current_donnees_point_de_prelevement.fichiers_tableurs:
-                    for (
-                        current_tableur
-                    ) in current_donnees_point_de_prelevement.fichiers_tableurs:
-                        new_df = process_standard_v2_file(dossier, current_tableur)
-                        if new_df is not None and not new_df.empty:
-                            new_df = new_df.replace({pd.NaT: None})
-                            new_df = new_df.replace({np.nan: None})
-                            new_prelevements = new_df.apply(
-                                lambda x: PrelevementReleve(
-                                    date=x["date"],
-                                    heure=x["heure"],
-                                    valeur=x["valeur"],
-                                    nom_parametre=x["nom_parametre"],
-                                    type=x["type"],
-                                    frequence=x["frequence"],
-                                    unite=x["unite"],
-                                    detail_point_suivi=x["detail_point_suivi"],
-                                    profondeur=x["profondeur"],
-                                    date_debut=x["date_debut"],
-                                    date_fin=x["date_fin"],
-                                    remarque=x["remarque"],
-                                    nom_point_prelevement=x["nom_point_prelevement"],
-                                    nom_point_de_prelevement_associe=x[
-                                        "nom_point_de_prelevement_associe"
-                                    ],
-                                    remarque_fonctionnement_point_de_prelevement=x[
-                                        "remarque_fonctionnement_point_de_prelevement"
-                                    ],
-                                    id_dossier=x["id_dossier"],
-                                    demarche_data_brute_id=demarche_data_brute_id,
-                                ),
-                                axis=1,
-                            )
-                            prelevements.extend(new_prelevements)
-                session.add_all(prelevements)
-                session.commit()

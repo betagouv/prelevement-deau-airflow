@@ -2,16 +2,13 @@ import copy
 import datetime
 import os
 import uuid
-from io import BytesIO
 from typing import List
 
-import numpy as np
-import pandas as pd
 import requests
-from sqlalchemy import select
 
-from utils.common.object_storage_client import download_file, upload_file
-from utils.common.utils import decode64, get_file_extension
+from utils.common.logging import get_logger
+from utils.common.object_storage_client import upload_file
+from utils.common.utils import decode64
 from utils.core.settings import settings
 from utils.core.tools import open_file, write_file
 from utils.demarchessimplifiees.constant import (
@@ -20,12 +17,6 @@ from utils.demarchessimplifiees.constant import (
     champs_integer_number_db_labels,
     champs_repetition_db_labels,
     champs_text_db_labels,
-    extract_file_engine,
-    tuple_fichier_standard_v2_onglets,
-)
-from utils.demarchessimplifiees.models import (
-    DonneesPointDePrelevement,
-    PreprocessedDossier,
 )
 from utils.demarchessimplifiees.schemas import (
     Champ,
@@ -35,7 +26,7 @@ from utils.demarchessimplifiees.schemas import (
     DecimalNumberChamp,
     Demarche,
     DonneesPointDePrelevementSerializer,
-    Dossier,
+    DossierSerializer,
     EnrichedAvisSerializer,
     EnrichedFileSerializer,
     EnrichedMessageSerializer,
@@ -50,6 +41,8 @@ from utils.demarchessimplifiees.schemas import (
     TextChamp,
     VolumesPompesSerializer,
 )
+
+logging = get_logger(__name__)
 
 
 def get_demarche_from_demarches_simplifiees(demarche_number: int) -> str:
@@ -169,7 +162,9 @@ def get_demarche(demarches_simplfiees_data: dict):
     return current_demarche
 
 
-def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
+def process_dossier(
+    current_dossier: DossierSerializer,
+) -> PreprocessedDossierSerializer:
     now = datetime.datetime.now()
     data = {}
     # ID
@@ -236,7 +231,7 @@ def process_dossier(current_dossier: Dossier) -> PreprocessedDossierSerializer:
     return PreprocessedDossierSerializer.validate(data)
 
 
-def process_dossiers(dossiers: List[Dossier]):
+def process_dossiers(dossiers: List[DossierSerializer]):
     processed_dossiers = []
     for node_id in range(len(dossiers)):
         curr_node = dossiers[node_id]
@@ -244,7 +239,7 @@ def process_dossiers(dossiers: List[Dossier]):
     return processed_dossiers
 
 
-def get_avis(dossiers: List[Dossier]):
+def get_avis(dossiers: List[DossierSerializer]):
     enriched_avis = []
     now = datetime.datetime.now()
     for dossier in dossiers:
@@ -270,7 +265,7 @@ def get_avis(dossiers: List[Dossier]):
     return enriched_avis
 
 
-def get_messages(dossiers: List[Dossier]):
+def get_messages(dossiers: List[DossierSerializer]):
     messages = []
     now = datetime.datetime.now()
     for dossier in dossiers:
@@ -291,7 +286,7 @@ def get_messages(dossiers: List[Dossier]):
     return messages
 
 
-def get_releve_index(dossiers: List[Dossier]):
+def get_releve_index(dossiers: List[DossierSerializer]):
     releve_index_list = []
     for dossier in dossiers:
         for champ in dossier.champs:
@@ -317,7 +312,7 @@ def get_releve_index(dossiers: List[Dossier]):
     return releve_index_list
 
 
-def get_volumes_pompes(dossiers: List[Dossier]):
+def get_volumes_pompes(dossiers: List[DossierSerializer]):
     volumes_pompes_list = []
     for dossier in dossiers:
         for champ in dossier.champs:
@@ -355,7 +350,7 @@ def get_volumes_pompes(dossiers: List[Dossier]):
     return volumes_pompes_list
 
 
-def get_extrait_registre(dossiers: List[Dossier]):
+def get_extrait_registre(dossiers: List[DossierSerializer]):
     extrait_registre_list = []
     now = datetime.datetime.now()
     for dossier in dossiers:
@@ -385,7 +380,7 @@ def get_extrait_registre(dossiers: List[Dossier]):
     return extrait_registre_list
 
 
-def get_donnees_point_de_prelevement(dossiers: List[Dossier]):
+def get_donnees_point_de_prelevement(dossiers: List[DossierSerializer]):
     donnees_point_de_prelevement_list = []
     now = datetime.datetime.now()
     for dossier in dossiers:
@@ -425,186 +420,3 @@ def get_donnees_point_de_prelevement(dossiers: List[Dossier]):
                     )
                 )
     return donnees_point_de_prelevement_list
-
-
-def get_donnees_point_de_prelevement_by_ddb_id(session, demarche_data_brute_id):
-    query = select(DonneesPointDePrelevement).filter(
-        DonneesPointDePrelevement.demarche_data_brute_id == demarche_data_brute_id
-    )
-    return session.execute(query).fetchall()
-
-
-def get_preprocessed_dossier(session, demarche_data_brute_id, id_dossier):
-    query = select(PreprocessedDossier).filter(
-        PreprocessedDossier.demarche_data_brute_id == demarche_data_brute_id,
-        PreprocessedDossier.id_dossier == id_dossier,
-    )
-    return session.execute(query).fetchone()
-
-
-def process_standard_v1_file(dossier, file):
-    file_extension = get_file_extension(file.object_storage_key)
-    if file_extension not in file_extension:
-        # TODO: send email
-        print(
-            f"[{dossier.id_dossier}] Invalid file format. Allowed formats: {file_extension}",
-            dossier.adresse_email_declarant,
-        )
-        return
-
-    try:
-        downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage_key)
-        with BytesIO(downloaded_file) as file_content:
-            print(
-                f"[{dossier.id_dossier}]: engine {extract_file_engine[file_extension]}"
-            )
-            sheets = pd.read_excel(
-                file_content,
-                engine=extract_file_engine[file_extension],
-                sheet_name=None,
-            )
-
-            if len(sheets) != 1:
-                print(
-                    f"[{dossier.id_dossier}] The file should contain only one sheet",
-                    dossier.adresse_email_declarant,
-                )
-                return
-
-            sheet = sheets[next(iter(sheets))]
-            tableur = np.vstack([sheet.columns.values, sheet.to_numpy()])
-            columns = tuple(
-                col.replace("\r", "").replace("\n", "") for col in tableur[2]
-            )
-
-            if "Nom du titulaire de l'autorisation de prélèvement" not in tableur[0][0]:
-                print(
-                    f"[{dossier.id_dossier}] Invalid file format.",
-                    dossier.adresse_email_declarant,
-                )
-                return
-
-            if None in tableur[3:, 0]:
-                print(
-                    f"[{dossier.id_dossier}]: {file.object_storage_key} contains None in date column"
-                )
-                return
-
-            if len(set(tableur[3:, 0])) != len(tableur[3:, 0]):
-                print(
-                    f"[{dossier.id_dossier}]: {file.object_storage_key} contains duplicate dates"
-                )
-                return
-
-            df_data = {
-                "date_releve": [],
-                "volume": [],
-                "point_prelevement": [],
-                "id_dossier": dossier.id_dossier,
-                "demarche_data_brute_id": dossier.demarche_data_brute_id,
-            }
-
-            for col_id in range(1, len(tableur[0])):
-                df_data["date_releve"].extend(tableur[3:, 0])
-                df_data["volume"].extend(tableur[3:, col_id])
-                df_data["point_prelevement"].extend(
-                    [columns[col_id]] * len(tableur[3:, 0])
-                )
-            df = pd.DataFrame(data=df_data)
-            return df
-
-    except Exception as e:
-        print(
-            f"[{dossier.id_dossier}]: Error processing file {file.object_storage_key}: {e}"
-        )
-
-
-def process_standard_v2_file_a_lire(dossier, sheet):
-    if sheet[2, 1] == np.nan:
-        print(
-            f"[{dossier.id_dossier}]: Nom du point de prelevement n'est pas précisé dans la page A_LIRE"
-        )
-        return
-
-    return {
-        "nom_point_prelevement": sheet[2, 1],
-        "nom_point_de_prelevement_associe": sheet[3, 1],
-        "remarque_fonctionnement_point_de_prelevement": sheet[4, 1],
-    }
-
-
-def process_standard_v2_file(dossier, file):
-    file_extension = get_file_extension(file.object_storage_key)
-    if file_extension not in file_extension:
-        # TODO: send email
-        print(
-            f"[{dossier.id_dossier}] Invalid file format. Allowed formats: {file_extension}",
-            dossier.adresse_email_declarant,
-        )
-        return
-    try:
-        downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage_key)
-        with BytesIO(downloaded_file) as file_content:
-            print(
-                f"[{dossier.id_dossier}]: engine {extract_file_engine[file_extension]}"
-            )
-            sheets = pd.read_excel(
-                file_content,
-                engine=extract_file_engine[file_extension],
-                sheet_name=None,
-            )
-            sheets = {key.replace(" ", "_"): value for key, value in sheets.items()}
-
-            if tuple(sheets.keys()) != tuple_fichier_standard_v2_onglets:
-                print(f"[{dossier.id_dossier}]: les onglets ne sont pas corrects")
-                return
-
-            first_sheet = sheets[tuple_fichier_standard_v2_onglets[0]]
-            first_sheet = np.vstack(
-                [first_sheet.columns.values, first_sheet.to_numpy()]
-            )
-
-            common_data = process_standard_v2_file_a_lire(dossier, first_sheet)
-
-            common_data["id_dossier"] = dossier.id_dossier
-            common_data["demarche_data_brute_id"] = dossier.demarche_data_brute_id
-            list_df = []
-
-            for curr_sheet_id in range(2, len(tuple_fichier_standard_v2_onglets)):
-                curr_sheet = sheets[tuple_fichier_standard_v2_onglets[curr_sheet_id]]
-                curr_sheet = np.vstack(
-                    [curr_sheet.columns.values, curr_sheet.to_numpy()]
-                )
-
-                if len(curr_sheet[1:, 1]) <= 11:
-                    continue
-                for i in range(2, len(curr_sheet[1, :])):
-                    if not (
-                        pd.isna(curr_sheet[1, i])
-                        or curr_sheet[1, i] == ""
-                        or curr_sheet[1, i] is None
-                        or curr_sheet[1, i] == "nan"
-                    ):
-                        df = pd.DataFrame(
-                            {
-                                "date": curr_sheet[12:, 0],
-                                "heure": curr_sheet[12:, 1],
-                                "valeur": curr_sheet[12:, i],
-                                "nom_parametre": curr_sheet[1, i],
-                                "type": curr_sheet[2, i],
-                                "frequence": curr_sheet[3, i],
-                                "unite": curr_sheet[4, i],
-                                "detail_point_suivi": curr_sheet[5, i],
-                                "profondeur": curr_sheet[6, i],
-                                "date_debut": curr_sheet[7, i],
-                                "date_fin": curr_sheet[8, i],
-                                "remarque": curr_sheet[9, i],
-                            }
-                            | common_data
-                        )
-                        list_df.append(df)
-            return pd.concat(list_df, ignore_index=True)
-    except Exception as e:
-        print(
-            f"[{dossier.id_dossier}]: Error processing file {file.object_storage_key}: {e}"
-        )

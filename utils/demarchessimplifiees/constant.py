@@ -1,3 +1,5 @@
+from dateutil.relativedelta import relativedelta
+
 champs_text_db_labels = {
     "Champ-3642770": "coordonnees",
     "Champ-3642774": "adresse_email_declarant",
@@ -25,6 +27,25 @@ champs_text_db_labels = {
     "Champ-3914811": "prelevement_icpe",
     "Champ-3642781": "donnees_standardisees",
     "Champ-3888611": "prelevement_aep_zre",
+    "Champ-4277890": "mois_prelevement_camion_citerne",
+    "Champ-4272683": "note_facilite_utilisation",
+    "Champ-4272684": "remarque_note",
+    "Champ-4272686": "temps_remplissage_questionnaire",
+    "Champ-4272687": "amelioration_temps_remplissage",
+    "Champ-4272692": "amelioration_temps_remplissage",
+    "Champ-4272689": "temps_formatage_donnees",
+    "Champ-4272688": "televersement_tableur_brutes",
+    "Champ-4272702": "acces_formulaire",
+    "Champ-4272705": "declarant_demarche_simplifiee",
+    "Champ-4272709": "raison_non_declaration_preleveur",
+    "Champ-4272713": "demande_documentation",
+    "Champ-4272714": "amelioration_documentation",
+    "Champ-4272723": "suggestion_informations_visualisation",
+    # No more used
+    # "Champ-4272678": "remarques_donnees_transmises",
+    # "Champ-4272680": "retour_utilisation_formulaire",
+    # "Champ-4272681": "objectif_collecte_donnees",
+    # "Champ-4272720": "developpement_interface_visualisation",
 }
 
 champs_checkbox_db_labels = {
@@ -35,6 +56,9 @@ champs_checkbox_db_labels = {
     "Champ-2378987": "panne_compteur",
     "Champ-4153004": "prelevement_sur_periode_aot_agricole",
     "Champ-4152855": "prelevement_sur_periode_camion_citerne",
+    "Champ-4324950": "prelevement_points_autorises_aot_2023",
+    "Champ-4272711": "rappel_obligation_mensuelle_declaration",
+    "Champ-4272724": "acceptation_contact_deal",
 }
 
 champs_date_db_labels = {
@@ -57,14 +81,14 @@ champs_piece_justificative_db_labels = {
     "Champ-3988475": "fichier_tableau_suivi_camion_citerne"  # Tableau de suivi
 }
 
-files_extensions = ["xlsx", "ods"]
+TABLE_FILES_EXTENSIONS = ["xlsx", "ods"]
 
 extract_file_engine = {
     "xlsx": "openpyxl",
     "ods": "odf",
 }
 
-tuple_fichier_standard_v2_onglets = (
+STANDARD_V2_SHEETS = (
     "A_LIRE",
     "NOMENCLATURE",
     "Data_|_T=_15_minutes",
@@ -72,3 +96,88 @@ tuple_fichier_standard_v2_onglets = (
     "Data_|_T=_1_trimestre",
     "Data_|_T=_autre",
 )
+
+STANDARD_V2_SHEETS_FREQUENCIES = {
+    "Data_|_T=_15_minutes": "15 minutes",
+    "Data_|_T=1_jour": "jour",
+    "Data_|_T=_1_trimestre": "trimestre",
+    "Data_|_T=_autre": "autre",
+}
+
+
+PARAMETER_NAME_CHOOSES = {
+    "chlorures",
+    "conductivité",
+    "débit prélevé",
+    "débit réservé",
+    "débit restitué",
+    "nitrates",
+    "niveau d’eau",
+    "pH",
+    "relevé d’index de compteur",
+    "sulfates",
+    "température",
+    "turbidité",
+    "volume prélevé",
+    "volume restitué",
+    "autre",
+}
+
+PARAMETER_TYPE_CHOOSES = {
+    "valeur brute",
+    "minimum",
+    "maximum",
+    "moyenne",
+    "médiane",
+    "différence d’index",
+    "autre",
+}
+
+PARAMETER_UNITE_CHOOSES = {
+    "µS/cm",
+    "degrés Celsius",
+    "L/s",
+    "m³/h",
+    "m³",
+    "m NGR",
+    "mg/L",
+    "autre",
+}
+
+PARAMETER_FREQUENCY_CHOOSES = {
+    "seconde",
+    "minute",
+    "15 minutes",
+    "heure",
+    "jour",
+    "mois",
+    "trimestre",
+    "année",
+    "autre",
+}
+
+STANDARD_V1_COLUMNS = (
+    "Date",
+    "412Riv. St Denis La Colline",
+    "413Rav. à Jacques (La Montagne)",
+    "414Rav. Charpentier",
+    "416Ruisseau Emmanuel",
+    "417Petite riv St Jean",
+    "418Riv. Bras Panon",
+    "419Riv. des Galets",
+    "420Rav. Bernica",
+    "421Bras de la Plaine",
+    "422Riv. Des Remparts",
+)
+
+
+FREQUENCIES = {
+    "seconde": relativedelta(seconds=1),
+    "minute": relativedelta(minutes=1),
+    "15 minutes": relativedelta(minutes=15),
+    "heure": relativedelta(hours=1),
+    "jour": relativedelta(days=1),
+    "mois": relativedelta(months=1),
+    "trimestre": relativedelta(months=3),
+    "année": relativedelta(years=1),
+}

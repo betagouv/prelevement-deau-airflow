@@ -83,7 +83,7 @@ class FileSerializer(BaseModel):
             "contentType": self.contentType,
             "createdAt": self.createdAt,
             "filename": self.filename,
-            "url": self.url
+            "url": self.url,
         }
 
     def __str__(self):
@@ -164,7 +164,15 @@ class MultipleDropDownListChamp(BasicChamp):
 
 
 Champ = Union[
-    TextChamp, CheckboxChamp, DateChamp, IntegerNumberChamp, PieceJustificativeChamp, 'RepetitionChamp', DecimalNumberChamp, MultipleDropDownListChamp]
+    TextChamp,
+    CheckboxChamp,
+    DateChamp,
+    IntegerNumberChamp,
+    PieceJustificativeChamp,
+    "RepetitionChamp",
+    DecimalNumberChamp,
+    MultipleDropDownListChamp,
+]
 
 
 class Row(BaseModel):
@@ -192,6 +200,7 @@ class GroupeInstructeur(BaseModel):
 
 
 # AVIS
+
 
 class AvisSerializer(BaseModel):
     id: str
@@ -225,7 +234,9 @@ class EnrichedAvisSerializer(BaseModel):
             "date_reponse": self.date_reponse,
             "claimant_email": self.claimant_email,
             "expert_email": self.expert_email,
-            "pieces_jointes": "[" + ",".join([str(f) for f in self.pieces_jointes]) + "]"
+            "pieces_jointes": "["
+            + ",".join([str(f) for f in self.pieces_jointes])
+            + "]",
         }
 
 
@@ -244,11 +255,13 @@ class EnrichedMessageSerializer(BaseModel):
             "email": self.email,
             "body": self.body,
             "date_creation": self.date_creation,
-            "pieces_jointes": "[" + ",".join([str(f) for f in self.pieces_jointes]) + "]"
+            "pieces_jointes": "["
+            + ",".join([str(f) for f in self.pieces_jointes])
+            + "]",
         }
 
 
-class Dossier(BaseModel):
+class DossierSerializer(BaseModel):
     id: str
     number: int
     archived: bool
@@ -288,7 +301,7 @@ class PageInfo(BaseModel):
 
 class DossierConnection(BaseModel):
     pageInfo: PageInfo
-    nodes: List[Dossier]
+    nodes: List[DossierSerializer]
 
 
 class ChorusConfiguration(BaseModel):
@@ -424,6 +437,46 @@ class PreprocessedDossierSerializer(BaseModel):
     # Champ-3888611
     # Prélèvement AEP ou en ZRE
     prelevement_aep_zre: str = ""
+    # Champ-4277890
+    # En quel mois les prélèvements que vous allez déclarer ont-ils été réalisés ?
+    mois_prelevement_camion_citerne: str = ""
+    # Champ-4272683
+    # Donnez une note sur la facilité de prise en main de l’outil démarches simplifiées
+    note_facilite_utilisation: Optional[str] = ""
+    # Champ-4272684
+    # Souhaitez-vous apporter une remarque à cette note ?
+    remarque_note: str = ""
+    # Champ-4272686
+    # Combien de temps avez-vous passé à remplir ce questionnaire ?
+    temps_remplissage_questionnaire: str = ""
+    # Champ-4272687,Champ-4272692
+    # Avez-vous une idée ce que qui pourrait être amélioré pour réduire ce temps ?
+    amelioration_temps_remplissage: str = ""
+    # Champ-4272689
+    # Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?
+    temps_formatage_donnees: str = ""
+    # Champ-4272688
+    # Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ?
+    televersement_tableur_brutes: str = ""
+    # Champ-4272702
+    # Comment cette personne a-t-elle eu accès au formulaire ?
+    acces_formulaire: str = ""
+    # Champ-4272705
+    # Qui est la personne qui a fait la déclaration sur Démarches Simplifiées ?
+    declarant_demarche_simplifiee: str = ""
+    # Champ-4272709
+    # Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?
+    raison_non_declaration_preleveur: str = ""
+    # Champ-4272713
+    # Souhaiteriez-vous disposer d’une documentation sur le remplissage de ce formulaire et la façon de remplir le modèle de tableau de données ?
+    demande_documentation: str = ""
+    # Champ-4272714
+    # Sous quelle forme une documentation d’utilisation vous semble la plus utile ?
+    amelioration_documentation: str = ""
+    # Champ-4272723
+    # Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données,
+    # et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.
+    suggestion_informations_visualisation: str = ""
 
     #################
     # CheckboxChamp #
@@ -450,6 +503,15 @@ class PreprocessedDossierSerializer(BaseModel):
     # Champ-4152855
     # Sur la période concernée par votre déclaration, avez-vous prélevé  sur au moins un des points autorisés par votre AOT ?
     prelevement_sur_periode_camion_citerne: Optional[bool] = None
+    # Champ-4324950
+    # Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?
+    prelevement_points_autorises_aot_2023: Optional[bool] = None
+    # Champ-4272711
+    # Souhaiteriez-vous recevoir le 1er de chaque mois un mail vous rappelant l'obligation mensuelle de déclaration ?
+    rappel_obligation_mensuelle_declaration: Optional[bool] = None
+    # Champ-4272724
+    # Accepteriez-vous d’être recontacté.e par la DEAL pour échanger davantage sur le sujet ?
+    acceptation_contact_deal: Optional[bool] = None
 
     #############
     # DateChamp #
@@ -527,6 +589,19 @@ class PreprocessedDossierSerializer(BaseModel):
             "prelevement_icpe": self.prelevement_icpe,
             "donnees_standardisees": self.donnees_standardisees,
             "prelevement_aep_zre": self.prelevement_aep_zre,
+            "mois_prelevement_camion_citerne": self.mois_prelevement_camion_citerne,
+            "note_facilite_utilisation": self.note_facilite_utilisation,
+            "remarque_note": self.remarque_note,
+            "temps_remplissage_questionnaire": self.temps_remplissage_questionnaire,
+            "amelioration_temps_remplissage": self.amelioration_temps_remplissage,
+            "temps_formatage_donnees": self.temps_formatage_donnees,
+            "televersement_tableur_brutes": self.televersement_tableur_brutes,
+            "acces_formulaire": self.acces_formulaire,
+            "declarant_demarche_simplifiee": self.declarant_demarche_simplifiee,
+            "raison_non_declaration_preleveur": self.raison_non_declaration_preleveur,
+            "demande_documentation": self.demande_documentation,
+            "amelioration_documentation": self.amelioration_documentation,
+            "suggestion_informations_visualisation": self.suggestion_informations_visualisation,
             "validation_informations": self.validation_informations,
             "details_prelevements_camion_citerne": self.details_prelevements_camion_citerne,
             "donnees_compteur_volumetrique": self.donnees_compteur_volumetrique,
@@ -534,12 +609,16 @@ class PreprocessedDossierSerializer(BaseModel):
             "panne_compteur": self.panne_compteur,
             "prelevement_sur_periode_aot_agricole": self.prelevement_sur_periode_aot_agricole,
             "prelevement_sur_periode_camion_citerne": self.prelevement_sur_periode_camion_citerne,
+            "prelevement_points_autorises_aot_2023": self.prelevement_points_autorises_aot_2023,
+            "rappel_obligation_mensuelle_declaration": self.rappel_obligation_mensuelle_declaration,
+            "acceptation_contact_deal": self.acceptation_contact_deal,
             "date_debut_periode_declaree": self.date_debut_periode_declaree,
             "date_fin_periode_declaree": self.date_fin_periode_declaree,
             "annee_prelevement_camion_citerne": self.annee_prelevement_camion_citerne,
             "nom_point_prelevement": self.nom_point_prelevement,
-            "fichier_tableau_suivi_camion_citerne": str(self.fichier_tableau_suivi_camion_citerne),
-
+            "fichier_tableau_suivi_camion_citerne": str(
+                self.fichier_tableau_suivi_camion_citerne
+            ),
         }
 
 
