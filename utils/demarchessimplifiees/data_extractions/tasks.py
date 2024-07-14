@@ -8,6 +8,17 @@ from airflow.models import BaseOperator
 from utils.common.object_storage_client import upload_file
 from utils.core.settings import settings
 from utils.db.session import local_session
+from utils.demarchessimplifiees.data_extractions.models import (
+    Avis,
+    DemarcheDataBrute,
+    DonneesPointDePrelevement,
+    ExtraitDeRegistre,
+    Message,
+    PieceJointe,
+    PreprocessedDossier,
+    ReleveIndex,
+    VolumesPompes,
+)
 from utils.demarchessimplifiees.data_extractions.services import (
     get_avis,
     get_demarche,
@@ -18,17 +29,6 @@ from utils.demarchessimplifiees.data_extractions.services import (
     get_releve_index,
     get_volumes_pompes,
     process_dossiers,
-)
-from utils.demarchessimplifiees.models import (
-    Avis,
-    DemarcheDataBrute,
-    DonneesPointDePrelevement,
-    ExtraitDeRegistre,
-    Message,
-    PieceJointe,
-    PreprocessedDossier,
-    ReleveIndex,
-    VolumesPompes,
 )
 
 

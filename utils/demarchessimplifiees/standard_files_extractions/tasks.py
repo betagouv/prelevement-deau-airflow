@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from utils.common.exceptions import FileError
 from utils.db.session import local_session
-from utils.demarchessimplifiees.models import (
+from utils.demarchessimplifiees.data_extractions.models import (
     CiterneReleve,
     PrelevementReleve,
     PreprocessedDossier,

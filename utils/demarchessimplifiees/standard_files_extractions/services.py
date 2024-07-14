@@ -22,7 +22,7 @@ from utils.demarchessimplifiees.constant import (
     STANDARD_V2_SHEETS_FREQUENCIES,
     extract_file_engine,
 )
-from utils.demarchessimplifiees.models import (
+from utils.demarchessimplifiees.data_extractions.models import (
     DonneesPointDePrelevement,
     PreprocessedDossier,
 )

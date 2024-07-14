@@ -1,8 +1,5 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-
-from utils.db.base_class import Base
 
 
 class DemarcheDataBruteBase:
@@ -17,43 +14,6 @@ class DemarcheDataBruteBase:
     demarche_number = Column(Integer)
 
 
-class DemarcheDataBrute(DemarcheDataBruteBase, Base):
-    __tablename__ = "demarche_data_brute"
-
-    # PreprocessedDossier 1-N
-    dossiers = relationship("PreprocessedDossier", back_populates="demarche_data_brute")
-
-    # VolumesPompes 1-N
-    volumes_pompes = relationship("VolumesPompes", back_populates="demarche_data_brute")
-
-    # ExtraitDeRegistre 1-N
-    extrait_de_registres = relationship(
-        "ExtraitDeRegistre", back_populates="demarche_data_brute"
-    )
-
-    # DonneesPointDePrelevement 1-N
-    donnees_point_de_prelevements = relationship(
-        "DonneesPointDePrelevement", back_populates="demarche_data_brute"
-    )
-
-    # ReleveIndex 1-N
-    releve_index = relationship("ReleveIndex", back_populates="demarche_data_brute")
-
-    # Avis 1-N
-    avis = relationship("Avis", back_populates="demarche_data_brute")
-
-    # Message 1-N
-    message = relationship("Message", back_populates="demarche_data_brute")
-
-    # CiterneReleve 1-N
-    citerne_releve = relationship("CiterneReleve", back_populates="demarche_data_brute")
-
-    # PrelevementReleve 1-N
-    prelevement_releve = relationship(
-        "PrelevementReleve", back_populates="demarche_data_brute"
-    )
-
-
 class DonneesPointDePrelevementBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     ligne = Column(
@@ -61,27 +21,6 @@ class DonneesPointDePrelevementBase:
         comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",
     )
     nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
-
-
-class DonneesPointDePrelevement(DonneesPointDePrelevementBase, Base):
-    __tablename__ = "donnees_point_de_prelevement"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="donnees_point_de_prelevements"
-    )
-
-    fichiers_tableurs = relationship(
-        "PieceJointe", secondary="fichiers_tableurs_assoc", back_populates="tableurs"
-    )
-    fichiers_autres_documents = relationship(
-        "PieceJointe",
-        secondary="fichiers_autres_documents_assoc",
-        back_populates="autres_documents",
-    )
 
 
 class PieceJointeBase:
@@ -92,112 +31,6 @@ class PieceJointeBase:
         String, comment="l'URL sur demarches simplifiees"
     )
     object_storage_key = Column(String, comment="La cle du fichier dans le bucket.")
-
-
-class PieceJointe(PieceJointeBase, Base):
-    __tablename__ = "piece_jointe"
-    tableurs = relationship(
-        "DonneesPointDePrelevement",
-        secondary="fichiers_tableurs_assoc",
-        back_populates="fichiers_tableurs",
-    )
-    autres_documents = relationship(
-        "DonneesPointDePrelevement",
-        secondary="fichiers_autres_documents_assoc",
-        back_populates="fichiers_autres_documents",
-    )
-
-    registre_papier = relationship(
-        "ExtraitDeRegistre",
-        secondary="extraits_de_registres_assoc",
-        back_populates="extraits_registres_papiers",
-    )
-    message = relationship(
-        "Message", secondary="message_assoc", back_populates="pieces_jointes"
-    )
-    avis = relationship("Avis", secondary="avis_assoc", back_populates="pieces_jointes")
-
-    dossier = relationship(
-        "PreprocessedDossier",
-        secondary="dossier_fichier_tableau_suivi_camion_citerne_assoc",
-        back_populates="fichier_tableau_suivi_camion_citerne",
-    )
-
-
-class FichiersTableursAssoc(Base):
-    __tablename__ = "fichiers_tableurs_assoc"
-    donnees_point_de_prelevement_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("donnees_point_de_prelevement.id"),
-        primary_key=True,
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class FichiersAutresDocumentsAssoc(Base):
-    __tablename__ = "fichiers_autres_documents_assoc"
-    donnees_point_de_prelevement_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("donnees_point_de_prelevement.id"),
-        primary_key=True,
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class ExtraitsDeRegistresAssoc(Base):
-    __tablename__ = "extraits_de_registres_assoc"
-    extrait_de_registre_id = Column(
-        UUID(as_uuid=True), ForeignKey("extrait_de_registre.id"), primary_key=True
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class MessageAssoc(Base):
-    __tablename__ = "message_assoc"
-    message_id = Column(UUID(as_uuid=True), ForeignKey("message.id"), primary_key=True)
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class AvisAssoc(Base):
-    __tablename__ = "avis_assoc"
-    avis_id = Column(UUID(as_uuid=True), ForeignKey("avis.id"), primary_key=True)
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class DossierFichierTableauSuiviCamionCiterneAssoc(Base):
-    __tablename__ = "dossier_fichier_tableau_suivi_camion_citerne_assoc"
-    dossier_id = Column(UUID(as_uuid=True), ForeignKey("dossier.id"), primary_key=True)
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
 
 
 class PreprocessedDossierBase:
@@ -370,20 +203,6 @@ class PreprocessedDossierBase:
     )
 
 
-class PreprocessedDossier(PreprocessedDossierBase, Base):
-    __tablename__ = "dossier"
-
-    fichier_tableau_suivi_camion_citerne = relationship(
-        "PieceJointe", secondary="dossier_fichier_tableau_suivi_camion_citerne_assoc"
-    )
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="dossiers")
-
-
 class ReleveIndexBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     ligne = Column(
@@ -392,18 +211,6 @@ class ReleveIndexBase:
     )
     date_releve_index = Column(DateTime)
     releve_index = Column(Float)
-
-
-class ReleveIndex(ReleveIndexBase, Base):
-    __tablename__ = "releve_index"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="releve_index"
-    )
 
 
 class VolumesPompesBase:
@@ -428,41 +235,11 @@ class VolumesPompesBase:
     )
 
 
-class VolumesPompes(VolumesPompesBase, Base):
-    __tablename__ = "volumes_pompes"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="volumes_pompes"
-    )
-
-
 class ExtraitDeRegistreBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     ligne = Column(
         Integer,
         comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",
-    )
-
-
-class ExtraitDeRegistre(ExtraitDeRegistreBase, Base):
-    __tablename__ = "extrait_de_registre"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="extrait_de_registres"
-    )
-
-    extraits_registres_papiers = relationship(
-        "PieceJointe",
-        secondary="extraits_de_registres_assoc",
-        back_populates="registre_papier",
     )
 
 
@@ -477,20 +254,6 @@ class AvisBase:
     expert_email = Column(String, comment="Email de l'expert")
 
 
-class Avis(AvisBase, Base):
-    __tablename__ = "avis"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="avis")
-
-    pieces_jointes = relationship(
-        "PieceJointe", secondary="avis_assoc", back_populates="avis"
-    )
-
-
 class MessageBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     id_message = Column(
@@ -501,37 +264,11 @@ class MessageBase:
     date_creation = Column(DateTime, comment="Date de reception du message")
 
 
-class Message(MessageBase, Base):
-    __tablename__ = "message"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship("DemarcheDataBrute", back_populates="message")
-
-    pieces_jointes = relationship(
-        "PieceJointe", secondary="message_assoc", back_populates="message"
-    )
-
-
 class CiterneReleveBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     date_releve = Column(DateTime, comment="Date du relevé")
     point_prelevement = Column(String, comment="Point de prélèvement")
     volume = Column(Float, comment="Volume prélevé")
-
-
-class CiterneReleve(CiterneReleveBase, Base):
-    __tablename__ = "citerne_releve"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="citerne_releve"
-    )
 
 
 class PrelevementReleveBase:
@@ -554,330 +291,4 @@ class PrelevementReleveBase:
     )
     remarque_fonctionnement_point_de_prelevement = Column(
         String, comment="Remarque sur le fonctionnement du point de prélèvement"
-    )
-
-
-class PrelevementReleve(PrelevementReleveBase, Base):
-    __tablename__ = "prelevement_releve"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBrute", back_populates="prelevement_releve"
-    )
-
-
-class DemarcheDataBruteLastSnapshot(DemarcheDataBruteBase, Base):
-    __tablename__ = "demarche_data_brute_last_snapshot"
-
-    # PreprocessedDossierLastSnapshot 1-N
-    dossiers = relationship(
-        "PreprocessedDossierLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # VolumesPompesLastSnapshot 1-N
-    volumes_pompes = relationship(
-        "VolumesPompesLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # ExtraitDeRegistreLastSnapshot 1-N
-    extrait_de_registres = relationship(
-        "ExtraitDeRegistreLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # DonneesPointDePrelevementLastSnapshot 1-N
-    donnees_point_de_prelevements = relationship(
-        "DonneesPointDePrelevementLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # ReleveIndexLastSnapshot 1-N
-    releve_index = relationship(
-        "ReleveIndexLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # AvisLastSnapshot 1-N
-    avis = relationship("AvisLastSnapshot", back_populates="demarche_data_brute")
-
-    # MessageLastSnapshot 1-N
-    message = relationship("MessageLastSnapshot", back_populates="demarche_data_brute")
-
-    # CiterneReleveLastSnapshot 1-N
-    citerne_releve = relationship(
-        "CiterneReleveLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-    # PrelevementReleveLastSnapshot 1-N
-    prelevement_releve = relationship(
-        "PrelevementReleveLastSnapshot", back_populates="demarche_data_brute"
-    )
-
-
-class DonneesPointDePrelevementLastSnapshot(DonneesPointDePrelevementBase, Base):
-    __tablename__ = "donnees_point_de_prelevement_last_snapshot"
-
-    # DemarcheDataBruteLastSnapshot 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="donnees_point_de_prelevements"
-    )
-
-    fichiers_tableurs = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="fichiers_tableurs_assoc_last_snapshot",
-        back_populates="tableurs",
-    )
-    fichiers_autres_documents = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="fichiers_autres_documents_assoc_last_snapshot",
-        back_populates="autres_documents",
-    )
-
-
-class PieceJointeLastSnapshot(PieceJointeBase, Base):
-    __tablename__ = "piece_jointe_last_snapshot"
-
-    tableurs = relationship(
-        "DonneesPointDePrelevementLastSnapshot",
-        secondary="fichiers_tableurs_assoc_last_snapshot",
-        back_populates="fichiers_tableurs",
-    )
-
-    autres_documents = relationship(
-        "DonneesPointDePrelevementLastSnapshot",
-        secondary="fichiers_autres_documents_assoc_last_snapshot",
-        back_populates="fichiers_autres_documents",
-    )
-
-    registre_papier = relationship(
-        "ExtraitDeRegistreLastSnapshot",
-        secondary="extraits_de_registres_assoc_last_snapshot",
-        back_populates="extraits_registres_papiers",
-    )
-
-    message = relationship(
-        "MessageLastSnapshot",
-        secondary="message_assoc_last_snapshot",
-        back_populates="pieces_jointes",
-    )
-
-    avis = relationship(
-        "AvisLastSnapshot",
-        secondary="avis_assoc_last_snapshot",
-        back_populates="pieces_jointes",
-    )
-
-    dossier = relationship(
-        "PreprocessedDossierLastSnapshot",
-        secondary="dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot",
-        back_populates="fichier_tableau_suivi_camion_citerne",
-    )
-
-
-class FichiersTableursAssocLastSnapshot(Base):
-    __tablename__ = "fichiers_tableurs_assoc_last_snapshot"
-
-    donnees_point_de_prelevement_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("donnees_point_de_prelevement_last_snapshot.id"),
-        primary_key=True,
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class FichiersAutresDocumentsAssocLastSnapshot(Base):
-    __tablename__ = "fichiers_autres_documents_assoc_last_snapshot"
-
-    donnees_point_de_prelevement_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("donnees_point_de_prelevement_last_snapshot.id"),
-        primary_key=True,
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class ExtraitsDeRegistresAssocLastSnapshot(Base):
-    __tablename__ = "extraits_de_registres_assoc_last_snapshot"
-
-    extrait_de_registre_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("extrait_de_registre_last_snapshot.id"),
-        primary_key=True,
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class MessageAssocLastSnapshot(Base):
-    __tablename__ = "message_assoc_last_snapshot"
-    message_id = Column(
-        UUID(as_uuid=True), ForeignKey("message_last_snapshot.id"), primary_key=True
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class AvisAssocLastSnapshot(Base):
-    __tablename__ = "avis_assoc_last_snapshot"
-    avis_id = Column(
-        UUID(as_uuid=True), ForeignKey("avis_last_snapshot.id"), primary_key=True
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class DossierFichierTableauSuiviCamionCiterneAssocLastSnapshot(Base):
-    __tablename__ = "dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot"
-    dossier_id = Column(
-        UUID(as_uuid=True), ForeignKey("dossier_last_snapshot.id"), primary_key=True
-    )
-    piece_jointe_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("piece_jointe_last_snapshot.id"),
-        primary_key=True,
-        comment="La clé primaire de la piece jointe",
-    )
-
-
-class PreprocessedDossierLastSnapshot(PreprocessedDossierBase, Base):
-    __tablename__ = "dossier_last_snapshot"
-
-    fichier_tableau_suivi_camion_citerne = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot",
-    )
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="dossiers"
-    )
-
-
-class ReleveIndexLastSnapshot(ReleveIndexBase, Base):
-    __tablename__ = "releve_index_last_snapshot"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="releve_index"
-    )
-
-
-class VolumesPompesLastSnapshot(VolumesPompesBase, Base):
-    __tablename__ = "volumes_pompes_last_snapshot"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="volumes_pompes"
-    )
-
-
-class ExtraitDeRegistreLastSnapshot(ExtraitDeRegistreBase, Base):
-    __tablename__ = "extrait_de_registre_last_snapshot"
-
-    # DemarcheDataBrute 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="extrait_de_registres"
-    )
-
-    extraits_registres_papiers = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="extraits_de_registres_assoc_last_snapshot",
-        back_populates="registre_papier",
-    )
-
-
-class AvisLastSnapshot(AvisBase, Base):
-    __tablename__ = "avis_last_snapshot"
-
-    # DemarcheDataBruteLastSnapshot 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="avis"
-    )
-
-    pieces_jointes = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="avis_assoc_last_snapshot",
-        back_populates="avis",
-    )
-
-
-class MessageLastSnapshot(MessageBase, Base):
-    __tablename__ = "message_last_snapshot"
-
-    # DemarcheDataBruteLastSnapshot 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="message"
-    )
-
-    pieces_jointes = relationship(
-        "PieceJointeLastSnapshot",
-        secondary="message_assoc_last_snapshot",
-        back_populates="message",
-    )
-
-
-class CiterneReleveLastSnapshot(CiterneReleveBase, Base):
-    __tablename__ = "citerne_releve_last_snapshot"
-
-    # DemarcheDataBruteLastSnapshot 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="citerne_releve"
-    )
-
-
-class PrelevementReleveLastSnapshot(PrelevementReleveBase, Base):
-    __tablename__ = "prelevement_releve_last_snapshot"
-
-    # DemarcheDataBruteLastSnapshot 1-N
-    demarche_data_brute_id = Column(
-        UUID(as_uuid=True), ForeignKey("demarche_data_brute_last_snapshot.id")
-    )
-    demarche_data_brute = relationship(
-        "DemarcheDataBruteLastSnapshot", back_populates="prelevement_releve"
     )

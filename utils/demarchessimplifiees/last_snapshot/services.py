@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from utils.demarchessimplifiees.models import PieceJointeLastSnapshot
+from utils.demarchessimplifiees.last_snapshot.models import PieceJointeLastSnapshot
 
 LIST_FILES_ATTRIBUTS = [
     "fichiers_tableurs",

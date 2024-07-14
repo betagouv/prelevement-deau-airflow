@@ -2,37 +2,39 @@ from airflow.models import BaseOperator
 from sqlalchemy import select
 
 from utils.db.session import local_session
-from utils.demarchessimplifiees.last_snapshot.services import (
-    copy_table_to_last_snapshot,
-)
-from utils.demarchessimplifiees.models import (
+from utils.demarchessimplifiees.data_extractions.models import (
     Avis,
+    CiterneReleve,
+    DemarcheDataBrute,
+    DonneesPointDePrelevement,
+    ExtraitDeRegistre,
+    Message,
+    PrelevementReleve,
+    PreprocessedDossier,
+    ReleveIndex,
+    VolumesPompes,
+)
+from utils.demarchessimplifiees.last_snapshot.models import (
     AvisAssocLastSnapshot,
     AvisLastSnapshot,
-    CiterneReleve,
     CiterneReleveLastSnapshot,
-    DemarcheDataBrute,
     DemarcheDataBruteLastSnapshot,
-    DonneesPointDePrelevement,
     DonneesPointDePrelevementLastSnapshot,
     DossierFichierTableauSuiviCamionCiterneAssocLastSnapshot,
-    ExtraitDeRegistre,
     ExtraitDeRegistreLastSnapshot,
     ExtraitsDeRegistresAssocLastSnapshot,
     FichiersAutresDocumentsAssocLastSnapshot,
     FichiersTableursAssocLastSnapshot,
-    Message,
     MessageAssocLastSnapshot,
     MessageLastSnapshot,
     PieceJointeLastSnapshot,
-    PrelevementReleve,
     PrelevementReleveLastSnapshot,
-    PreprocessedDossier,
     PreprocessedDossierLastSnapshot,
-    ReleveIndex,
     ReleveIndexLastSnapshot,
-    VolumesPompes,
     VolumesPompesLastSnapshot,
+)
+from utils.demarchessimplifiees.last_snapshot.services import (
+    copy_table_to_last_snapshot,
 )
 
 
