@@ -1,7 +1,7 @@
 from airflow.models import BaseOperator
 from sqlalchemy import select
 
-from utils.db.session import local_session
+from utils.db.init_db import get_local_session
 from utils.demarchessimplifiees.data_extractions.models import (
     Avis,
     CiterneReleve,
@@ -44,7 +44,7 @@ class StoreLastSnapshotData(BaseOperator):
 
     def execute(self, context):
         demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-        with local_session() as session:
+        with get_local_session() as session:
             list_of_tables = [
                 FichiersTableursAssocLastSnapshot,
                 FichiersAutresDocumentsAssocLastSnapshot,

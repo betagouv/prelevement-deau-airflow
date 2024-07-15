@@ -6,7 +6,7 @@ from airflow.models import BaseOperator
 from sqlalchemy import select
 
 from utils.common.exceptions import FileError
-from utils.db.session import local_session
+from utils.db.init_db import get_local_session
 from utils.demarchessimplifiees.data_extractions.models import (
     CiterneReleve,
     PrelevementReleve,
@@ -26,7 +26,7 @@ class CollectCiterneData(BaseOperator):
 
     def execute(self, context):
         demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-        with local_session() as session:
+        with get_local_session() as session:
             df = pd.DataFrame()
             query = select(PreprocessedDossier).where(
                 PreprocessedDossier.demarche_data_brute_id == demarche_data_brute_id
@@ -66,7 +66,7 @@ class CollectPrelevementData(BaseOperator):
 
     def execute(self, context):
         demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-        with local_session() as session:
+        with get_local_session() as session:
             donnees_point_de_prelevement_entries = (
                 get_donnees_point_de_prelevement_by_ddb_id(
                     session, demarche_data_brute_id

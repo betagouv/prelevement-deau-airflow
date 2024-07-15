@@ -7,7 +7,7 @@ from airflow.models import BaseOperator
 
 from utils.common.object_storage_client import upload_file
 from utils.core.settings import settings
-from utils.db.session import local_session
+from utils.db.init_db import get_local_session
 from utils.demarchessimplifiees.data_extractions.models import (
     Avis,
     DemarcheDataBrute,
@@ -136,7 +136,7 @@ class CollectDemarcheOperator(BaseOperator):
 
         sha256_hash.update(collected_data.encode())
         hashed_collected_data = sha256_hash.hexdigest()
-        with local_session() as session:
+        with get_local_session() as session:
             try:
                 if (
                     session.query(DemarcheDataBrute)

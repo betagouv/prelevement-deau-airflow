@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: d8a41ba6649a
-Revises: 7385df688e7d
-Create Date: 2024-07-14 21:18:23.130291
+Revision ID: 944b3db2e00d
+Revises: 680800074590
+Create Date: 2024-07-15 09:51:15.977059
 
 """
 
@@ -14,8 +14,8 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "d8a41ba6649a"
-down_revision: Union[str, None] = "7385df688e7d"
+revision: str = "944b3db2e00d"
+down_revision: Union[str, None] = "680800074590"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -42,18 +42,25 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("hashed_collected_data"),
         sa.UniqueConstraint("object_storage_key"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_demarche_data_brute_last_snapshot_date_created"),
-        "demarche_data_brute_last_snapshot",
-        ["date_created"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_demarche_data_brute_last_snapshot_id"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_demarche_data_brute_last_snapshot_id"
+        ),
         "demarche_data_brute_last_snapshot",
         ["id"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.create_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_demarche_data_brute_last_snapshot_date_created"
+        ),
+        "demarche_data_brute_last_snapshot",
+        ["date_created"],
+        unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "piece_jointe_last_snapshot",
@@ -84,12 +91,16 @@ def upgrade() -> None:
             comment="La cle du fichier dans le bucket.",
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_piece_jointe_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_piece_jointe_last_snapshot_date_created"
+        ),
         "piece_jointe_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "avis_last_snapshot",
@@ -128,21 +139,26 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_avis_last_snapshot_date_created"),
-        "avis_last_snapshot",
-        ["date_created"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_avis_last_snapshot_id_dossier"),
+        op.f("ix_demarches_simplifiees_last_snapshot_avis_last_snapshot_id_dossier"),
         "avis_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.create_index(
+        op.f("ix_demarches_simplifiees_last_snapshot_avis_last_snapshot_date_created"),
+        "avis_last_snapshot",
+        ["date_created"],
+        unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "citerne_releve_last_snapshot",
@@ -169,21 +185,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_citerne_releve_last_snapshot_date_created"),
-        "citerne_releve_last_snapshot",
-        ["date_created"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_citerne_releve_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_citerne_releve_last_snapshot_id_dossier"
+        ),
         "citerne_releve_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.create_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_citerne_releve_last_snapshot_date_created"
+        ),
+        "citerne_releve_last_snapshot",
+        ["date_created"],
+        unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "donnees_point_de_prelevement_last_snapshot",
@@ -212,21 +237,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_donnees_point_de_prelevement_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_donnees_point_de_prelevement_last_snapshot_date_created"
+        ),
         "donnees_point_de_prelevement_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_donnees_point_de_prelevement_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_donnees_point_de_prelevement_last_snapshot_id_dossier"
+        ),
         "donnees_point_de_prelevement_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "dossier_last_snapshot",
@@ -546,29 +580,35 @@ def upgrade() -> None:
             "suggestion_informations_visualisation",
             sa.String(),
             nullable=True,
-            comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données,"
-            + "et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
+            comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données, et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
         ),
         sa.Column(
             "demarche_data_brute_id", postgresql.UUID(as_uuid=True), nullable=True
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_dossier_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_dossier_last_snapshot_date_created"
+        ),
         "dossier_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_dossier_last_snapshot_id_dossier"),
+        op.f("ix_demarches_simplifiees_last_snapshot_dossier_last_snapshot_id_dossier"),
         "dossier_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "extrait_de_registre_last_snapshot",
@@ -591,21 +631,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_extrait_de_registre_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extrait_de_registre_last_snapshot_date_created"
+        ),
         "extrait_de_registre_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_extrait_de_registre_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extrait_de_registre_last_snapshot_id_dossier"
+        ),
         "extrait_de_registre_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "message_last_snapshot",
@@ -636,21 +685,28 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_message_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_message_last_snapshot_date_created"
+        ),
         "message_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_message_last_snapshot_id_dossier"),
+        op.f("ix_demarches_simplifiees_last_snapshot_message_last_snapshot_id_dossier"),
         "message_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "prelevement_releve_last_snapshot",
@@ -720,21 +776,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_prelevement_releve_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_prelevement_releve_last_snapshot_date_created"
+        ),
         "prelevement_releve_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_prelevement_releve_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_prelevement_releve_last_snapshot_id_dossier"
+        ),
         "prelevement_releve_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "releve_index_last_snapshot",
@@ -759,21 +824,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_releve_index_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_releve_index_last_snapshot_date_created"
+        ),
         "releve_index_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_releve_index_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_releve_index_last_snapshot_id_dossier"
+        ),
         "releve_index_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "volumes_pompes_last_snapshot",
@@ -820,21 +894,30 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["demarche_data_brute_id"],
-            ["demarche_data_brute_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.demarche_data_brute_last_snapshot.id"
+            ],
         ),
         sa.PrimaryKeyConstraint("id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_volumes_pompes_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_volumes_pompes_last_snapshot_date_created"
+        ),
         "volumes_pompes_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_volumes_pompes_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_volumes_pompes_last_snapshot_id_dossier"
+        ),
         "volumes_pompes_last_snapshot",
         ["id_dossier"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "avis_assoc_last_snapshot",
@@ -849,22 +932,26 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["avis_id"],
-            ["avis_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.avis_last_snapshot.id"],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint("id", "avis_id", "piece_jointe_id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_avis_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_avis_assoc_last_snapshot_date_created"
+        ),
         "avis_assoc_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
-        "dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot",
+        "dossier_fichier_tableau_suivi_camion_citerne_assoc_ls",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("date_created", sa.DateTime(), nullable=True),
         sa.Column("dossier_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -876,21 +963,23 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["dossier_id"],
-            ["dossier_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.dossier_last_snapshot.id"],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint("id", "dossier_id", "piece_jointe_id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
         op.f(
-            "ix_dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot_date_created"
+            "ix_demarches_simplifiees_last_snapshot_dossier_fichier_tableau_suivi_camion_citerne_assoc_ls_date_created"
         ),
-        "dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot",
+        "dossier_fichier_tableau_suivi_camion_citerne_assoc_ls",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "extraits_de_registres_assoc_last_snapshot",
@@ -907,19 +996,25 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["extrait_de_registre_id"],
-            ["extrait_de_registre_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.extrait_de_registre_last_snapshot.id"
+            ],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint("id", "extrait_de_registre_id", "piece_jointe_id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_extraits_de_registres_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extraits_de_registres_assoc_last_snapshot_date_created"
+        ),
         "extraits_de_registres_assoc_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "fichiers_autres_documents_assoc_last_snapshot",
@@ -938,21 +1033,27 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["donnees_point_de_prelevement_id"],
-            ["donnees_point_de_prelevement_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.donnees_point_de_prelevement_last_snapshot.id"
+            ],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint(
             "id", "donnees_point_de_prelevement_id", "piece_jointe_id"
         ),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_fichiers_autres_documents_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_fichiers_autres_documents_assoc_last_snapshot_date_created"
+        ),
         "fichiers_autres_documents_assoc_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "fichiers_tableurs_assoc_last_snapshot",
@@ -971,21 +1072,27 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["donnees_point_de_prelevement_id"],
-            ["donnees_point_de_prelevement_last_snapshot.id"],
+            [
+                "demarches_simplifiees_last_snapshot.donnees_point_de_prelevement_last_snapshot.id"
+            ],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint(
             "id", "donnees_point_de_prelevement_id", "piece_jointe_id"
         ),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_fichiers_tableurs_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_fichiers_tableurs_assoc_last_snapshot_date_created"
+        ),
         "fichiers_tableurs_assoc_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_table(
         "message_assoc_last_snapshot",
@@ -1000,19 +1107,23 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(
             ["message_id"],
-            ["message_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.message_last_snapshot.id"],
         ),
         sa.ForeignKeyConstraint(
             ["piece_jointe_id"],
-            ["piece_jointe_last_snapshot.id"],
+            ["demarches_simplifiees_last_snapshot.piece_jointe_last_snapshot.id"],
         ),
         sa.PrimaryKeyConstraint("id", "message_id", "piece_jointe_id"),
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.create_index(
-        op.f("ix_message_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_message_assoc_last_snapshot_date_created"
+        ),
         "message_assoc_last_snapshot",
         ["date_created"],
         unique=False,
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.alter_column(
         "avis",
@@ -1037,6 +1148,9 @@ def upgrade() -> None:
         ["id_dossier"],
         unique=False,
     )
+    op.create_index(
+        op.f("ix_demarche_data_brute_id"), "demarche_data_brute", ["id"], unique=False
+    )
     op.alter_column(
         "donnees_point_de_prelevement",
         "id_dossier",
@@ -1049,6 +1163,150 @@ def upgrade() -> None:
         "donnees_point_de_prelevement",
         ["id_dossier"],
         unique=False,
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "prelevement_points_autorises_aot_2023",
+            sa.Boolean(),
+            nullable=True,
+            comment="Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "rappel_obligation_mensuelle_declaration",
+            sa.Boolean(),
+            nullable=True,
+            comment="Souhaiteriez-vous recevoir le 1er de chaque mois un mail vous rappelant l'obligation mensuelle de déclaration ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "acceptation_contact_deal",
+            sa.Boolean(),
+            nullable=True,
+            comment="Accepteriez-vous d’être recontacté.e par la DEAL pour échanger davantage sur le sujet ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "mois_prelevement_camion_citerne",
+            sa.String(),
+            nullable=True,
+            comment="En quel mois les prélèvements que vous allez déclarer ont-ils été réalisés ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "note_facilite_utilisation",
+            sa.String(),
+            nullable=True,
+            comment="Donnez une note sur la facilité de prise en main de l’outil démarches simplifiées",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "remarque_note",
+            sa.String(),
+            nullable=True,
+            comment="Souhaitez-vous apporter une remarque à cette note ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "temps_remplissage_questionnaire",
+            sa.String(),
+            nullable=True,
+            comment="Combien de temps avez-vous passé à remplir ce questionnaire ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "amelioration_temps_remplissage",
+            sa.String(),
+            nullable=True,
+            comment="Avez-vous une idée ce que qui pourrait être amélioré pour réduire ce temps ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "temps_formatage_donnees",
+            sa.String(),
+            nullable=True,
+            comment="Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "televersement_tableur_brutes",
+            sa.String(),
+            nullable=True,
+            comment="Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "acces_formulaire",
+            sa.String(),
+            nullable=True,
+            comment="Comment cette personne a-t-elle eu accès au formulaire ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "declarant_demarche_simplifiee",
+            sa.String(),
+            nullable=True,
+            comment="Qui est la personne qui a fait la déclaration sur Démarches Simplifiées ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "raison_non_declaration_preleveur",
+            sa.String(),
+            nullable=True,
+            comment="Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "demande_documentation",
+            sa.String(),
+            nullable=True,
+            comment="Souhaiteriez-vous disposer d’une documentation sur le remplissage de ce formulaire et la façon de remplir le modèle de tableau de données ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "amelioration_documentation",
+            sa.String(),
+            nullable=True,
+            comment="Sous quelle forme une documentation d’utilisation vous semble la plus utile ?",
+        ),
+    )
+    op.add_column(
+        "dossier",
+        sa.Column(
+            "suggestion_informations_visualisation",
+            sa.String(),
+            nullable=True,
+            comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données, et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
+        ),
     )
     op.alter_column(
         "extrait_de_registre",
@@ -1167,6 +1425,22 @@ def downgrade() -> None:
         existing_comment="Identifiant unique du dossier.",
         existing_nullable=True,
     )
+    op.drop_column("dossier", "suggestion_informations_visualisation")
+    op.drop_column("dossier", "amelioration_documentation")
+    op.drop_column("dossier", "demande_documentation")
+    op.drop_column("dossier", "raison_non_declaration_preleveur")
+    op.drop_column("dossier", "declarant_demarche_simplifiee")
+    op.drop_column("dossier", "acces_formulaire")
+    op.drop_column("dossier", "televersement_tableur_brutes")
+    op.drop_column("dossier", "temps_formatage_donnees")
+    op.drop_column("dossier", "amelioration_temps_remplissage")
+    op.drop_column("dossier", "temps_remplissage_questionnaire")
+    op.drop_column("dossier", "remarque_note")
+    op.drop_column("dossier", "note_facilite_utilisation")
+    op.drop_column("dossier", "mois_prelevement_camion_citerne")
+    op.drop_column("dossier", "acceptation_contact_deal")
+    op.drop_column("dossier", "rappel_obligation_mensuelle_declaration")
+    op.drop_column("dossier", "prelevement_points_autorises_aot_2023")
     op.drop_index(
         op.f("ix_donnees_point_de_prelevement_id_dossier"),
         table_name="donnees_point_de_prelevement",
@@ -1179,6 +1453,7 @@ def downgrade() -> None:
         existing_comment="Identifiant unique du dossier.",
         existing_nullable=True,
     )
+    op.drop_index(op.f("ix_demarche_data_brute_id"), table_name="demarche_data_brute")
     op.drop_index(op.f("ix_citerne_releve_id_dossier"), table_name="citerne_releve")
     op.alter_column(
         "citerne_releve",
@@ -1198,126 +1473,236 @@ def downgrade() -> None:
         existing_nullable=True,
     )
     op.drop_index(
-        op.f("ix_message_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_message_assoc_last_snapshot_date_created"
+        ),
         table_name="message_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("message_assoc_last_snapshot")
-    op.drop_index(
-        op.f("ix_fichiers_tableurs_assoc_last_snapshot_date_created"),
-        table_name="fichiers_tableurs_assoc_last_snapshot",
+    op.drop_table(
+        "message_assoc_last_snapshot", schema="demarches_simplifiees_last_snapshot"
     )
-    op.drop_table("fichiers_tableurs_assoc_last_snapshot")
-    op.drop_index(
-        op.f("ix_fichiers_autres_documents_assoc_last_snapshot_date_created"),
-        table_name="fichiers_autres_documents_assoc_last_snapshot",
-    )
-    op.drop_table("fichiers_autres_documents_assoc_last_snapshot")
-    op.drop_index(
-        op.f("ix_extraits_de_registres_assoc_last_snapshot_date_created"),
-        table_name="extraits_de_registres_assoc_last_snapshot",
-    )
-    op.drop_table("extraits_de_registres_assoc_last_snapshot")
     op.drop_index(
         op.f(
-            "ix_dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot_date_created"
+            "ix_demarches_simplifiees_last_snapshot_fichiers_tableurs_assoc_last_snapshot_date_created"
         ),
-        table_name="dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot",
+        table_name="fichiers_tableurs_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("dossier_fichier_tableau_suivi_camion_citerne_assoc_last_snapshot")
+    op.drop_table(
+        "fichiers_tableurs_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
     op.drop_index(
-        op.f("ix_avis_assoc_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_fichiers_autres_documents_assoc_last_snapshot_date_created"
+        ),
+        table_name="fichiers_autres_documents_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table(
+        "fichiers_autres_documents_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extraits_de_registres_assoc_last_snapshot_date_created"
+        ),
+        table_name="extraits_de_registres_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table(
+        "extraits_de_registres_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_dossier_fichier_tableau_suivi_camion_citerne_assoc_ls_date_created"
+        ),
+        table_name="dossier_fichier_tableau_suivi_camion_citerne_assoc_ls",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table(
+        "dossier_fichier_tableau_suivi_camion_citerne_assoc_ls",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_avis_assoc_last_snapshot_date_created"
+        ),
         table_name="avis_assoc_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("avis_assoc_last_snapshot")
+    op.drop_table(
+        "avis_assoc_last_snapshot", schema="demarches_simplifiees_last_snapshot"
+    )
     op.drop_index(
-        op.f("ix_volumes_pompes_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_volumes_pompes_last_snapshot_id_dossier"
+        ),
         table_name="volumes_pompes_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_volumes_pompes_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_volumes_pompes_last_snapshot_date_created"
+        ),
         table_name="volumes_pompes_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("volumes_pompes_last_snapshot")
+    op.drop_table(
+        "volumes_pompes_last_snapshot", schema="demarches_simplifiees_last_snapshot"
+    )
     op.drop_index(
-        op.f("ix_releve_index_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_releve_index_last_snapshot_id_dossier"
+        ),
         table_name="releve_index_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_releve_index_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_releve_index_last_snapshot_date_created"
+        ),
         table_name="releve_index_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("releve_index_last_snapshot")
+    op.drop_table(
+        "releve_index_last_snapshot", schema="demarches_simplifiees_last_snapshot"
+    )
     op.drop_index(
-        op.f("ix_prelevement_releve_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_prelevement_releve_last_snapshot_id_dossier"
+        ),
         table_name="prelevement_releve_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_prelevement_releve_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_prelevement_releve_last_snapshot_date_created"
+        ),
         table_name="prelevement_releve_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("prelevement_releve_last_snapshot")
-    op.drop_index(
-        op.f("ix_message_last_snapshot_id_dossier"), table_name="message_last_snapshot"
+    op.drop_table(
+        "prelevement_releve_last_snapshot", schema="demarches_simplifiees_last_snapshot"
     )
     op.drop_index(
-        op.f("ix_message_last_snapshot_date_created"),
+        op.f("ix_demarches_simplifiees_last_snapshot_message_last_snapshot_id_dossier"),
         table_name="message_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("message_last_snapshot")
     op.drop_index(
-        op.f("ix_extrait_de_registre_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_message_last_snapshot_date_created"
+        ),
+        table_name="message_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table("message_last_snapshot", schema="demarches_simplifiees_last_snapshot")
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extrait_de_registre_last_snapshot_id_dossier"
+        ),
         table_name="extrait_de_registre_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_extrait_de_registre_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_extrait_de_registre_last_snapshot_date_created"
+        ),
         table_name="extrait_de_registre_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("extrait_de_registre_last_snapshot")
-    op.drop_index(
-        op.f("ix_dossier_last_snapshot_id_dossier"), table_name="dossier_last_snapshot"
+    op.drop_table(
+        "extrait_de_registre_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_dossier_last_snapshot_date_created"),
+        op.f("ix_demarches_simplifiees_last_snapshot_dossier_last_snapshot_id_dossier"),
         table_name="dossier_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("dossier_last_snapshot")
     op.drop_index(
-        op.f("ix_donnees_point_de_prelevement_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_dossier_last_snapshot_date_created"
+        ),
+        table_name="dossier_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table("dossier_last_snapshot", schema="demarches_simplifiees_last_snapshot")
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_donnees_point_de_prelevement_last_snapshot_id_dossier"
+        ),
         table_name="donnees_point_de_prelevement_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_donnees_point_de_prelevement_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_donnees_point_de_prelevement_last_snapshot_date_created"
+        ),
         table_name="donnees_point_de_prelevement_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("donnees_point_de_prelevement_last_snapshot")
+    op.drop_table(
+        "donnees_point_de_prelevement_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
     op.drop_index(
-        op.f("ix_citerne_releve_last_snapshot_id_dossier"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_citerne_releve_last_snapshot_date_created"
+        ),
         table_name="citerne_releve_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_citerne_releve_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_citerne_releve_last_snapshot_id_dossier"
+        ),
         table_name="citerne_releve_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("citerne_releve_last_snapshot")
-    op.drop_index(
-        op.f("ix_avis_last_snapshot_id_dossier"), table_name="avis_last_snapshot"
+    op.drop_table(
+        "citerne_releve_last_snapshot", schema="demarches_simplifiees_last_snapshot"
     )
     op.drop_index(
-        op.f("ix_avis_last_snapshot_date_created"), table_name="avis_last_snapshot"
+        op.f("ix_demarches_simplifiees_last_snapshot_avis_last_snapshot_date_created"),
+        table_name="avis_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("avis_last_snapshot")
     op.drop_index(
-        op.f("ix_piece_jointe_last_snapshot_date_created"),
+        op.f("ix_demarches_simplifiees_last_snapshot_avis_last_snapshot_id_dossier"),
+        table_name="avis_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
+    op.drop_table("avis_last_snapshot", schema="demarches_simplifiees_last_snapshot")
+    op.drop_index(
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_piece_jointe_last_snapshot_date_created"
+        ),
         table_name="piece_jointe_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("piece_jointe_last_snapshot")
+    op.drop_table(
+        "piece_jointe_last_snapshot", schema="demarches_simplifiees_last_snapshot"
+    )
     op.drop_index(
-        op.f("ix_demarche_data_brute_last_snapshot_id"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_demarche_data_brute_last_snapshot_date_created"
+        ),
         table_name="demarche_data_brute_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
     op.drop_index(
-        op.f("ix_demarche_data_brute_last_snapshot_date_created"),
+        op.f(
+            "ix_demarches_simplifiees_last_snapshot_demarche_data_brute_last_snapshot_id"
+        ),
         table_name="demarche_data_brute_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
     )
-    op.drop_table("demarche_data_brute_last_snapshot")
+    op.drop_table(
+        "demarche_data_brute_last_snapshot",
+        schema="demarches_simplifiees_last_snapshot",
+    )
     # ### end Alembic commands ###
