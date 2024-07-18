@@ -12,6 +12,7 @@ from utils.demarchessimplifiees.data_extractions.models import (
     PrelevementReleve,
     PreprocessedDossier,
 )
+from utils.demarchessimplifiees.errors_management.models import ErrorMail
 from utils.demarchessimplifiees.standard_files_extractions.services import (
     get_donnees_point_de_prelevement_by_ddb_id,
     get_preprocessed_dossier,
@@ -39,10 +40,24 @@ class CollectCiterneData(BaseOperator):
                             result = process_standard_v1_file(dossier, file)
                             if result is not None:
                                 df = pd.concat([df, result])
-                        except Exception as e:
-                            logging.error(
-                                f"Error while processing file {file.object_storage_key}: {str(e)}"
+                        except FileError as e:
+
+                            error_mail_request = select(ErrorMail).filter(
+                                ErrorMail.email == e.email,
+                                ErrorMail.id_dossier == e.id_dossier,
+                                ErrorMail.message == e.get_message_to_send(),
+                                ErrorMail.is_sent == False,  # noqa
                             )
+                            error_mail = session.execute(error_mail_request).scalar()
+                            if not error_mail:
+                                error_mail = ErrorMail(
+                                    email=e.email,
+                                    id_dossier=e.id_dossier,
+                                    message=e.get_message_to_send(),
+                                )
+                                session.add(error_mail)
+                            logging.error(e.email)
+                            logging.error(e.get_message_to_send())
 
             df = df[df.date_releve.notna()]
             if not df.empty:

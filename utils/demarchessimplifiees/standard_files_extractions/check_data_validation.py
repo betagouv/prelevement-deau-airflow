@@ -14,7 +14,7 @@ from utils.common.exceptions import (
     ValuesAreNotPositiveError,
 )
 from utils.common.utils import get_file_extension
-from utils.demarchessimplifiees.constant import TABLE_FILES_EXTENSIONS
+from utils.demarchessimplifiees.common.constant import TABLE_FILES_EXTENSIONS
 
 
 def check_file_extension(dossier, file):
@@ -76,6 +76,7 @@ def check_value_present_per_row(dossier, file, tableur):
                 email=dossier.adresse_email_declarant,
                 id_dossier=dossier.id_dossier,
                 file_name=file.nom_fichier,
+                row=3 + row,
             )
 
 

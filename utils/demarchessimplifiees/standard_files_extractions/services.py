@@ -1,4 +1,5 @@
 import datetime as dt
+from collections import Counter
 from io import BytesIO
 
 import numpy as np
@@ -15,7 +16,7 @@ from utils.common.logging import get_logger
 from utils.common.object_storage_client import download_file
 from utils.common.utils import get_file_extension
 from utils.core.settings import settings
-from utils.demarchessimplifiees.constant import (
+from utils.demarchessimplifiees.common.constant import (
     FREQUENCIES,
     STANDARD_V1_COLUMNS,
     STANDARD_V2_SHEETS,
@@ -81,6 +82,8 @@ def process_standard_v1_file(dossier, file):
         tableur = convert_sheet_to_array(sheet)
         columns = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
 
+        dates = tableur[3:, 0]
+
         if columns != STANDARD_V1_COLUMNS:
             raise StandardFileFormatError(
                 email=dossier.adresse_email_declarant,
@@ -88,19 +91,22 @@ def process_standard_v1_file(dossier, file):
                 file_name=file.nom_fichier,
             )
 
-        if None in tableur[3:, 0]:
+        if None in dates:
             raise DateColumnContainsInvalidValuesError(
                 email=dossier.adresse_email_declarant,
                 id_dossier=dossier.id_dossier,
                 file_name=file.nom_fichier,
             )
 
-        # check_validate_date_format(dossier, file, tableur[3:, 0])
-        if len(set(tableur[3:, 0])) != len(tableur[3:, 0]):
+        # check_validate_date_format(dossier, file, dates)
+        duplicated_dates = [date for date, count in Counter(dates).items() if count > 1]
+        if duplicated_dates:
             raise DateColumnContainsDuplicateValuesError(
                 email=dossier.adresse_email_declarant,
                 id_dossier=dossier.id_dossier,
                 file_name=file.nom_fichier,
+                rows=duplicated_dates,
+                sheet_name=None,
             )
 
         check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
@@ -116,9 +122,9 @@ def process_standard_v1_file(dossier, file):
         }
 
         for col_id in range(1, len(tableur[0])):
-            df_data["date_releve"].extend(tableur[3:, 0])
+            df_data["date_releve"].extend(dates)
             df_data["volume"].extend(tableur[3:, col_id])
-            df_data["point_prelevement"].extend([columns[col_id]] * len(tableur[3:, 0]))
+            df_data["point_prelevement"].extend([columns[col_id]] * len(dates))
         df = pd.DataFrame(data=df_data)
         df = df[df.volume.notna()].reset_index(drop=True)
         return df

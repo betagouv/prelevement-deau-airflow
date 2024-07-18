@@ -11,14 +11,14 @@ from utils.common.object_storage_client import upload_file
 from utils.common.utils import decode64
 from utils.core.settings import settings
 from utils.core.tools import open_file, write_file
-from utils.demarchessimplifiees.constant import (
+from utils.demarchessimplifiees.common.constant import (
     champs_checkbox_db_labels,
     champs_date_db_labels,
     champs_integer_number_db_labels,
     champs_repetition_db_labels,
     champs_text_db_labels,
 )
-from utils.demarchessimplifiees.schemas import (
+from utils.demarchessimplifiees.common.schemas import (
     Champ,
     ChampType,
     CheckboxChamp,

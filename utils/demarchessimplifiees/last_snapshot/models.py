@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from utils.db.base_class import Base
-from utils.demarchessimplifiees.models import (
+from utils.demarchessimplifiees.common.models import (
     AvisBase,
     CiterneReleveBase,
     DemarcheDataBruteBase,
