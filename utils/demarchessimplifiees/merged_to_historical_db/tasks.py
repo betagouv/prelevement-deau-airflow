@@ -1,5 +1,5 @@
 from airflow.models import BaseOperator
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from utils.core.settings import settings
 from utils.db.init_db import get_local_session
@@ -54,6 +54,10 @@ class MergeLastSnapshotOperator(BaseOperator):
         # Create an engine for the target database
         engine = create_engine(settings.MERGED_DATABASE_URL, pool_pre_ping=True)
 
+        engine.execute(
+            text("CREATE schema IF NOT EXISTS demarches_simplifiees_last_snapshot ;")
+        )
+
         # Delete tables in the target database
         Base.metadata.drop_all(engine)
 
@@ -66,7 +70,6 @@ class MergeLastSnapshotOperator(BaseOperator):
         ) as source_session, get_local_session(
             settings.MERGED_DATABASE_URL
         ) as target_session:
-            pass
             for table in reversed(list_of_tables):
                 # Fetch data from source table
                 data = source_session.query(table).all()

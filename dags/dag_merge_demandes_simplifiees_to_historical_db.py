@@ -5,11 +5,20 @@ from airflow import DAG
 from utils.demarchessimplifiees.merged_to_historical_db.tasks import (
     MergeLastSnapshotOperator,
 )
+from utils.donnees_historiques.tasks import (
+    LoadHistoricalDataOperator,
+    MergeHistoricalDBOperator,
+)
 
 with DAG(
     dag_id="dag_merge_demandes_simplifiees_to_historical_db",
     start_date=datetime.datetime(2024, 4, 24),
-    schedule="@weekly",
+    schedule="@daily",
     catchup=False,
 ):
-    MergeLastSnapshotOperator(task_id="merge_last_snapshot")
+    load_historical_db = LoadHistoricalDataOperator(task_id="LoadHistoricalData")
+    merged_last_snapshot = MergeLastSnapshotOperator(task_id="merge_last_snapshot")
+    merged_historical_db = MergeHistoricalDBOperator(task_id="merge_historical_db")
+
+    load_historical_db >> merged_last_snapshot
+    merged_last_snapshot >> merged_historical_db

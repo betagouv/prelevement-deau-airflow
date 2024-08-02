@@ -6,6 +6,7 @@ load_dotenv()
 
 class Settings(BaseSettings, case_sensitive=True):
     DATABASE_URL: str
+    HISTORICAL_DATABASE_URL: str
     MERGED_DATABASE_URL: str
     DEMARCHES_SIMPLIFIEES_URL: str
     DEMARCHES_SIMPLIFIEES_TOKEN: str

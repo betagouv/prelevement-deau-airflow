@@ -11,7 +11,7 @@ from utils.demarchessimplifiees.standard_files_extractions.tasks import (  # Col
 with DAG(
     dag_id="dag_collect_demarche_prelevement_deau",
     start_date=datetime.datetime(2024, 4, 24),
-    schedule="@weekly",
+    schedule="@daily",
     catchup=False,
 ):
     collect_demarches_simplifiees = CollectDemarcheOperator(

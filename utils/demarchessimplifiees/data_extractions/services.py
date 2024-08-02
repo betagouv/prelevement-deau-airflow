@@ -1,5 +1,6 @@
 import copy
 import datetime
+import json
 import os
 import uuid
 from typing import List
@@ -45,7 +46,9 @@ from utils.demarchessimplifiees.common.schemas import (
 logging = get_logger(__name__)
 
 
-def get_demarche_from_demarches_simplifiees(demarche_number: int) -> str:
+def get_demarche_from_demarches_simplifiees_page(
+    demarche_number: int, after: str = None
+) -> dict:
     query = open_file(
         path=os.path.join(
             os.getenv("AIRFLOW_HOME"),
@@ -65,11 +68,39 @@ def get_demarche_from_demarches_simplifiees(demarche_number: int) -> str:
                 "includeDossiers": True,
                 "includeAvis": True,
                 "includeMessages": True,
+                "after": after,
             },
             "operationName": "getDemarche",
         },
     )
-    return response.content.decode("utf-8")
+    return json.loads(response.content.decode("utf-8"))
+
+
+def get_demarche_from_demarches_simplifiees(demarche_number: int) -> dict:
+    demarche_dict = get_demarche_from_demarches_simplifiees_page(demarche_number)
+
+    has_next_page = demarche_dict["data"]["demarche"]["dossiers"]["pageInfo"][
+        "hasNextPage"
+    ]
+
+    while has_next_page:
+        next_cursor = demarche_dict["data"]["demarche"]["dossiers"]["pageInfo"][
+            "endCursor"
+        ]
+        new_response = get_demarche_from_demarches_simplifiees_page(
+            demarche_number, next_cursor
+        )
+        demarche_dict["data"]["demarche"]["dossiers"]["nodes"] += new_response["data"][
+            "demarche"
+        ]["dossiers"]["nodes"]
+        demarche_dict["data"]["demarche"]["dossiers"]["pageInfo"] = new_response[
+            "data"
+        ]["demarche"]["dossiers"]["pageInfo"]
+        has_next_page = new_response["data"]["demarche"]["dossiers"]["pageInfo"][
+            "hasNextPage"
+        ]
+
+    return demarche_dict
 
 
 def save_demarche_to_file(demarche_number: int, demarche: str, hashed_data: str) -> str:

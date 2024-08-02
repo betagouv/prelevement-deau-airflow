@@ -39,16 +39,14 @@ class CollectDemarcheOperator(BaseOperator):
 
     def execute(self, context):
         sha256_hash = hashlib.sha256()
-        collected_data = get_demarche_from_demarches_simplifiees(self.demarche_number)
-        collected_data_json = json.loads(collected_data)
-        if "errors" in collected_data_json:
-            raise Exception(
-                f"Error while collecting data: {collected_data_json['errors']}"
-            )
+        demarche_dict = get_demarche_from_demarches_simplifiees(self.demarche_number)
+        demarche_json = json.dumps(demarche_dict)
+        if "errors" in demarche_dict:
+            raise Exception(f"Error while collecting data: {demarche_dict['errors']}")
 
         demarche_data_brute_id = uuid.uuid4()
 
-        demarche = get_demarche(collected_data_json)
+        demarche = get_demarche(demarche_dict)
         processed_dossiers = process_dossiers(demarche.dossiers.nodes)
         messages = get_messages(demarche.dossiers.nodes)
         avis = get_avis(demarche.dossiers.nodes)
@@ -134,7 +132,7 @@ class CollectDemarcheOperator(BaseOperator):
             for msg in messages
         ]
 
-        sha256_hash.update(collected_data.encode())
+        sha256_hash.update(demarche_json.encode())
         hashed_collected_data = sha256_hash.hexdigest()
         with get_local_session() as session:
             try:
@@ -151,7 +149,7 @@ class CollectDemarcheOperator(BaseOperator):
                 upload_file(
                     bucket_name=settings.SCW_S3_BUCKET,
                     key=demarche_data_object_storage_key,
-                    body=collected_data,
+                    body=demarche_json,
                 )
                 new_demarche_data_brute = DemarcheDataBrute(
                     id=demarche_data_brute_id,
