@@ -1,4 +1,4 @@
-.PHONY: install-pre-commit run-pre-commit generate-auto-migration migrate-head
+.PHONY: install-pre-commit run-pre-commit generate-auto-migration migrate-head rollback
 
 install-pre-commit:
 	poetry run pre-commit install
@@ -11,3 +11,6 @@ generate-auto-migration:
 
 migrate-head:
 	poetry run alembic upgrade head
+
+rollback:
+	poetry run alembic downgrade -1

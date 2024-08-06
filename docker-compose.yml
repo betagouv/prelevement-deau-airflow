@@ -62,8 +62,19 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     DATABASE_URL: ${DATABASE_URL:-}
+    MERGED_DATABASE_URL: ${MERGED_DATABASE_URL:-}
+    HISTORICAL_DATABASE_URL: ${HISTORICAL_DATABASE_URL:-}
     DEMARCHES_SIMPLIFIEES_URL: ${DEMARCHES_SIMPLIFIEES_URL:-}
     DEMARCHES_SIMPLIFIEES_TOKEN: ${DEMARCHES_SIMPLIFIEES_TOKEN:-}
+    DEMARCHE_ID: ${DEMARCHE_ID:-}
+    SCW_ACCESS_KEY: ${SCW_ACCESS_KEY:-}
+    SCW_SECRET_KEY: ${SCW_SECRET_KEY:-}
+    SCW_DEFAULT_ORGANIZATION_ID: ${SCW_DEFAULT_ORGANIZATION_ID:-}
+    SCW_DEFAULT_PROJECT_ID: ${SCW_DEFAULT_PROJECT_ID:-}
+    SCW_S3_URL: ${SCW_S3_URL:-}
+    SCW_S3_REGION: ${SCW_S3_REGION:-}
+    SCW_S3_BUCKET: ${SCW_S3_BUCKET:-}
+
     PYTHONPATH: /opt/airflow
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
