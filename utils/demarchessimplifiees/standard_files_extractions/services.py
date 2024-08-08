@@ -9,8 +9,9 @@ from sqlalchemy import select
 from utils.common.exceptions import (
     DateColumnContainsDuplicateValuesError,
     DateColumnContainsInvalidValuesError,
-    StandardFileFormatError,
     StandardFileParametersBadValueError,
+    TableHeadersError,
+    TableIsEmptyError,
 )
 from utils.common.logging import get_logger
 from utils.common.object_storage_client import download_file
@@ -28,6 +29,7 @@ from utils.demarchessimplifiees.data_extractions.models import (
     PreprocessedDossier,
 )
 from utils.demarchessimplifiees.standard_files_extractions.check_data_validation import (
+    check_date_is_not_missing,
     check_file_extension,
     check_nom_point_de_prelevement,
     check_parameter_is_not_provided,
@@ -80,15 +82,18 @@ def process_standard_v1_file(dossier, file):
 
         sheet = sheets[next(iter(sheets))]
         tableur = convert_sheet_to_array(sheet)
-        columns = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
+        headers = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
 
         dates = tableur[3:, 0]
 
-        if columns != STANDARD_V1_COLUMNS:
-            raise StandardFileFormatError(
+        if headers != STANDARD_V1_COLUMNS:
+            raise TableHeadersError(
                 email=dossier.adresse_email_declarant,
                 id_dossier=dossier.id_dossier,
                 file_name=file.nom_fichier,
+                sheet_name=None,
+                headers=headers,
+                expected_headers=STANDARD_V1_COLUMNS,
             )
 
         if None in dates:
@@ -109,9 +114,9 @@ def process_standard_v1_file(dossier, file):
                 sheet_name=None,
             )
 
-        check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
-
+        check_date_is_not_missing(dossier, file, dates)
         check_value_present_per_row(dossier, file, tableur)
+        check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
 
         df_data = {
             "date_releve": [],
@@ -124,9 +129,15 @@ def process_standard_v1_file(dossier, file):
         for col_id in range(1, len(tableur[0])):
             df_data["date_releve"].extend(dates)
             df_data["volume"].extend(tableur[3:, col_id])
-            df_data["point_prelevement"].extend([columns[col_id]] * len(dates))
+            df_data["point_prelevement"].extend([headers[col_id]] * len(dates))
         df = pd.DataFrame(data=df_data)
         df = df[df.volume.notna()].reset_index(drop=True)
+        if df.empty:
+            raise TableIsEmptyError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id_dossier,
+                file_name=file.nom_fichier,
+            )
         return df
 
 

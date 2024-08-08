@@ -2,6 +2,7 @@ MESSAGES = {
     "FILE_ERROR": "Une erreur est survenue lors du traitement du fichier.",
     "STANDARD_FILE_FILE_EXTENSION_ERROR": "L'extension du fichier n'est pas valide. Extension attendue: {TABLE_FILES_EXTENSIONS}",
     "FORMAT_FILE_ERROR": "Le format du fichier n'est pas valide.",
+    "HEADER_IS_NOT_VALID": "L'en-tête du tableau n'est pas valide. Vérifier que les colonnes sont bien nommées. Colonnes actuelles: {headers}. Colonnes attendues: {expected_headers}",
     "NOM_POINT_DE_PRELEVEMENT_ERROR": "Le nom du point de prélèvement est invalide.",
     "ONE_OR_MORE_PARAMETERS_ARE_MISSING": "Un ou plusieurs paramètres sont manquants. les paramètres attendus sont: {parameters}",
     "ONE_OR_MORE_PARAMETERS_HAVE_BAD_VALUE": "Un ou plusieurs paramètres ont une valeur incorrecte. les parametres ayant une valeur incorrecte sont: {parameters}",
@@ -11,4 +12,7 @@ MESSAGES = {
     "DATE_COLUMN_CONTAINS_DUPLICATE_VALUES": "La colonne de date contient des valeurs dupliquées. les valeurs dupliquées sont: {rows}",
     "VALUES_ARE_NOT_POSITIVE": "Les valeurs du tableau doivent être positives.",
     "AT_LEAST_ONE_VALUE_SHOULD_BE_PROVIDED_BY_ROW": "Au moins une valeur doit être renseignée. Dans la ligne {row} du tableau.",
+    "MISSING_DATE": "La date est manquante dans le tableau. Dans la ligne {row} du tableau.",
+    "DATE_FORMAT_ERROR": "La date n'est pas au bon format. Dans la ligne {row} du tableau. La valeur actuelle: '{current_value}'.Vérifier que la date est au format 'DD/MM/YYYY'.",
+    "TABLE_IS_EMPTY": "Le tableau est vide. Vérifier que le tableau contient des données.",
 }

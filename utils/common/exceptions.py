@@ -35,6 +35,22 @@ class StandardFileFormatError(FileError):
     MESSAGE = MESSAGES["FORMAT_FILE_ERROR"]
 
 
+class TableHeadersError(FileError):
+    MESSAGE = MESSAGES["HEADER_IS_NOT_VALID"]
+
+    def __init__(
+        self, email, id_dossier, file_name, sheet_name, headers, expected_headers
+    ):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.headers = headers
+        self.expected_headers = expected_headers
+
+    def get_error_message(self):
+        return self.MESSAGE.format(
+            headers=self.headers, expected_headers=self.expected_headers
+        )
+
+
 class StandardFileNomPointDePrelevementError(FileError):
     MESSAGE = MESSAGES["NOM_POINT_DE_PRELEVEMENT_ERROR"]
 
@@ -98,9 +114,41 @@ class ValuesAreNotPositiveError(FileError):
 class AtLeastOneValueShouldBeProvidedByRowError(FileError):
     MESSAGE = MESSAGES["AT_LEAST_ONE_VALUE_SHOULD_BE_PROVIDED_BY_ROW"]
 
-    def __init__(self, email, id_dossier, file_name, sheet_name, row):
+    def __init__(self, email, id_dossier, file_name, row, sheet_name=None):
         super().__init__(email, id_dossier, file_name, sheet_name)
         self.row = row
 
     def get_error_message(self):
         return self.MESSAGE.format(row=self.row)
+
+
+class MissingDateError(FileError):
+    MESSAGE = MESSAGES["MISSING_DATE"]
+
+    def __init__(self, email, id_dossier, file_name, row, sheet_name=None):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.row = row
+
+    def get_error_message(self):
+        return self.MESSAGE.format(row=self.row)
+
+
+class DateFormatError(FileError):
+    MESSAGE = MESSAGES["DATE_FORMAT_ERROR"]
+
+    def __init__(
+        self, email, id_dossier, file_name, row, current_value, sheet_name=None
+    ):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.row = row
+        self.current_value = current_value
+
+    def get_error_message(self):
+        return self.MESSAGE.format(row=self.row, current_value=self.current_value)
+
+
+class TableIsEmptyError(FileError):
+    MESSAGE = MESSAGES["TABLE_IS_EMPTY"]
+
+    def __init__(self, email, id_dossier, file_name):
+        super().__init__(email, id_dossier, file_name)
