@@ -66,81 +66,6 @@ def string_to_timedelta(time_str):
     return dt.timedelta(hours=hours, minutes=minutes)
 
 
-def process_standard_v1_file(dossier, file):
-    file_extension = get_file_extension(file.object_storage_key)
-    check_file_extension(dossier, file)
-
-    downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage_key)
-    with BytesIO(downloaded_file) as file_content:
-        sheets = pd.read_excel(
-            file_content,
-            engine=extract_file_engine[file_extension],
-            sheet_name=None,
-        )
-
-        check_table_sheets_number(dossier, file, sheets, 1)
-
-        sheet = sheets[next(iter(sheets))]
-        tableur = convert_sheet_to_array(sheet)
-        headers = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
-
-        dates = tableur[3:, 0]
-
-        if headers != STANDARD_V1_COLUMNS:
-            raise TableHeadersError(
-                email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
-                sheet_name=None,
-                headers=headers,
-                expected_headers=STANDARD_V1_COLUMNS,
-            )
-
-        if None in dates:
-            raise DateColumnContainsInvalidValuesError(
-                email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
-            )
-
-        # check_validate_date_format(dossier, file, dates)
-        duplicated_dates = [date for date, count in Counter(dates).items() if count > 1]
-        if duplicated_dates:
-            raise DateColumnContainsDuplicateValuesError(
-                email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
-                rows=duplicated_dates,
-                sheet_name=None,
-            )
-
-        check_date_is_not_missing(dossier, file, dates)
-        check_value_present_per_row(dossier, file, tableur)
-        check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
-
-        df_data = {
-            "date_releve": [],
-            "volume": [],
-            "point_prelevement": [],
-            "id_dossier": dossier.id_dossier,
-            "demarche_data_brute_id": dossier.demarche_data_brute_id,
-        }
-
-        for col_id in range(1, len(tableur[0])):
-            df_data["date_releve"].extend(dates)
-            df_data["volume"].extend(tableur[3:, col_id])
-            df_data["point_prelevement"].extend([headers[col_id]] * len(dates))
-        df = pd.DataFrame(data=df_data)
-        df = df[df.volume.notna()].reset_index(drop=True)
-        if df.empty:
-            raise TableIsEmptyError(
-                email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
-            )
-        return df
-
-
 def generate_dates_array(start_date, end_date, frequency):
     dates = []
     current_date = start_date
@@ -150,7 +75,87 @@ def generate_dates_array(start_date, end_date, frequency):
     return dates
 
 
-def process_standard_v2_file(dossier, file):
+def download_excel(dossier, file):
+    file_extension = get_file_extension(file.object_storage_key)
+    check_file_extension(dossier, file)
+    if file_extension not in extract_file_engine:
+        raise ValueError(f"Unsupported file extension: {file_extension}")
+    downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage_key)
+    file_content = BytesIO(downloaded_file)
+    sheets = pd.read_excel(
+        file_content,
+        engine=extract_file_engine[file_extension],
+        sheet_name=None,
+    )
+    return sheets
+
+
+def process_standard_citerne_file(dossier, file):
+    sheets = download_excel(dossier, file)
+
+    check_table_sheets_number(dossier, file, sheets, 1)
+
+    sheet = sheets[next(iter(sheets))]
+    tableur = convert_sheet_to_array(sheet)
+    headers = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
+
+    dates = tableur[3:, 0]
+
+    if headers != STANDARD_V1_COLUMNS:
+        raise TableHeadersError(
+            email=dossier.adresse_email_declarant,
+            id_dossier=dossier.id_dossier,
+            file_name=file.nom_fichier,
+            sheet_name=None,
+            headers=headers,
+            expected_headers=STANDARD_V1_COLUMNS,
+        )
+
+    if None in dates:
+        raise DateColumnContainsInvalidValuesError(
+            email=dossier.adresse_email_declarant,
+            id_dossier=dossier.id_dossier,
+            file_name=file.nom_fichier,
+        )
+
+    check_date_is_not_missing(dossier, file, dates)
+    duplicated_dates = [date for date, count in Counter(dates).items() if count > 1]
+    if duplicated_dates:
+        raise DateColumnContainsDuplicateValuesError(
+            email=dossier.adresse_email_declarant,
+            id_dossier=dossier.id_dossier,
+            file_name=file.nom_fichier,
+            duplicated_dates=duplicated_dates,
+            sheet_name=None,
+        )
+
+    check_value_present_per_row(dossier, file, tableur)
+    check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
+
+    df_data = {
+        "date_releve": [],
+        "volume": [],
+        "point_prelevement": [],
+        "id_dossier": dossier.id_dossier,
+        "demarche_data_brute_id": dossier.demarche_data_brute_id,
+    }
+
+    for col_id in range(1, len(tableur[0])):
+        df_data["date_releve"].extend(dates)
+        df_data["volume"].extend(tableur[3:, col_id])
+        df_data["point_prelevement"].extend([headers[col_id]] * len(dates))
+    df = pd.DataFrame(data=df_data)
+    df = df[df.volume.notna()].reset_index(drop=True)
+    if df.empty:
+        raise TableIsEmptyError(
+            email=dossier.adresse_email_declarant,
+            id_dossier=dossier.id_dossier,
+            file_name=file.nom_fichier,
+        )
+    return df
+
+
+def process_standard_aep_zre_file(dossier, file):
     file_extension = get_file_extension(file.object_storage_key)
 
     check_file_extension(dossier, file)

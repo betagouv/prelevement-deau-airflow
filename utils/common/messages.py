@@ -9,7 +9,7 @@ MESSAGES = {
     "DATE_AND_HOUR_COLUMNS_BAD_VALUE": "Les colonnes de date et d'heure ne correspondent pas aux valeurs attendu. les lignes ayant une valeur incorrecte sont: {rows}",
     "DATE_FREQUENCY_MISMATCH": "La fréquence des dates n'est pas cohérente à celle attendue.",
     "DATE_COLUMN_CONTAINS_INVALID_VALUES": "La colonne de date contient des valeurs invalides. Vérifier que la frequence est correcte. Vérifier qu'il n'y a pas de valeurs manquantes.",
-    "DATE_COLUMN_CONTAINS_DUPLICATE_VALUES": "La colonne de date contient des valeurs dupliquées. les valeurs dupliquées sont: {rows}",
+    "DATE_COLUMN_CONTAINS_DUPLICATE_VALUES": "La colonne de date contient des valeurs dupliquées. les valeurs dupliquées sont: {duplicated_dates}",
     "VALUES_ARE_NOT_POSITIVE": "Les valeurs du tableau doivent être positives.",
     "AT_LEAST_ONE_VALUE_SHOULD_BE_PROVIDED_BY_ROW": "Au moins une valeur doit être renseignée. Dans la ligne {row} du tableau.",
     "MISSING_DATE": "La date est manquante dans le tableau. Dans la ligne {row} du tableau.",

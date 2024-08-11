@@ -16,8 +16,8 @@ from utils.demarchessimplifiees.errors_management.models import ErrorMail
 from utils.demarchessimplifiees.standard_files_extractions.services import (
     get_donnees_point_de_prelevement_by_ddb_id,
     get_preprocessed_dossier,
-    process_standard_v1_file,
-    process_standard_v2_file,
+    process_standard_aep_zre_file,
+    process_standard_citerne_file,
 )
 
 
@@ -37,7 +37,7 @@ class CollectCiterneData(BaseOperator):
                 if dossier.fichier_tableau_suivi_camion_citerne:
                     for file in dossier.fichier_tableau_suivi_camion_citerne:
                         try:
-                            result = process_standard_v1_file(dossier, file)
+                            result = process_standard_citerne_file(dossier, file)
                             if result is not None:
                                 df = pd.concat([df, result])
                         except FileError as e:
@@ -106,7 +106,9 @@ class CollectPrelevementData(BaseOperator):
                     ) in current_donnees_point_de_prelevement.fichiers_tableurs:
                         try:
                             object_storage_key = current_tableur.object_storage_key
-                            new_df = process_standard_v2_file(dossier, current_tableur)
+                            new_df = process_standard_aep_zre_file(
+                                dossier, current_tableur
+                            )
                             if new_df is not None and not new_df.empty:
                                 new_df = new_df.replace({pd.NaT: None})
                                 new_df = new_df.replace({np.nan: None})
