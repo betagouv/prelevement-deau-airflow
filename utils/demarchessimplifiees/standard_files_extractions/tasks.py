@@ -34,30 +34,33 @@ class CollectCiterneData(BaseOperator):
             )
             for result in session.execute(query):
                 dossier = result[0]
-                if dossier.fichier_tableau_suivi_camion_citerne:
-                    for file in dossier.fichier_tableau_suivi_camion_citerne:
-                        try:
+                try:
+                    if dossier.fichier_tableau_suivi_camion_citerne:
+                        current_dfs = []
+                        for file in dossier.fichier_tableau_suivi_camion_citerne:
                             result = process_standard_citerne_file(dossier, file)
                             if result is not None:
-                                df = pd.concat([df, result])
-                        except FileError as e:
-
-                            error_mail_request = select(ErrorMail).filter(
-                                ErrorMail.email == e.email,
-                                ErrorMail.id_dossier == e.id_dossier,
-                                ErrorMail.message == e.get_message_to_send(),
-                                ErrorMail.is_sent == False,  # noqa
-                            )
-                            error_mail = session.execute(error_mail_request).scalar()
-                            if not error_mail:
-                                error_mail = ErrorMail(
-                                    email=e.email,
-                                    id_dossier=e.id_dossier,
-                                    message=e.get_message_to_send(),
-                                )
-                                session.add(error_mail)
-                            logging.error(e.email)
-                            logging.error(e.get_message_to_send())
+                                current_dfs.append(result)
+                        if current_dfs:
+                            for current_df in current_dfs:
+                                df = pd.concat([df, current_df], ignore_index=True)
+                except FileError as e:
+                    error_mail_request = select(ErrorMail).filter(
+                        ErrorMail.email == e.email,
+                        ErrorMail.id_dossier == e.id_dossier,
+                        ErrorMail.message == e.get_message_to_send(),
+                        ErrorMail.is_sent == False,  # noqa
+                    )
+                    error_mail = session.execute(error_mail_request).scalar()
+                    if not error_mail:
+                        error_mail = ErrorMail(
+                            email=e.email,
+                            id_dossier=e.id_dossier,
+                            message=e.get_message_to_send(),
+                        )
+                        session.add(error_mail)
+                    logging.error(e.email)
+                    logging.error(e.get_message_to_send())
 
             df = df[df.date_releve.notna()]
             if not df.empty:
