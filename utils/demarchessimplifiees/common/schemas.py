@@ -13,6 +13,12 @@ class DossierState(enum.Enum):
     SANS_SUITE = "sans_suite"
 
 
+class CorrectionReasonEnum(str, enum.Enum):
+    incorrect = "incorrect"
+    incomplete = "incomplete"
+    outdated = "outdated"
+
+
 class Civilite(enum.Enum):
     M = "M"
     Mme = "Mme"

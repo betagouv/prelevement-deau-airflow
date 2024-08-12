@@ -104,7 +104,6 @@ STANDARD_V2_SHEETS_FREQUENCIES = {
     "Data_|_T=_autre": "autre",
 }
 
-
 PARAMETER_NAME_CHOOSES = {
     "chlorures",
     "conductivité",
@@ -169,7 +168,6 @@ STANDARD_V1_COLUMNS = (
     "421Bras de la Plaine",
     "422Riv. Des Remparts",
 )
-
 
 FREQUENCIES = {
     "seconde": relativedelta(seconds=1),

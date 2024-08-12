@@ -3,7 +3,6 @@ import datetime
 import json
 import os
 import uuid
-from enum import Enum
 from typing import List
 
 import requests
@@ -24,6 +23,7 @@ from utils.demarchessimplifiees.common.schemas import (
     Champ,
     ChampType,
     CheckboxChamp,
+    CorrectionReasonEnum,
     DateChamp,
     DecimalNumberChamp,
     Demarche,
@@ -47,10 +47,24 @@ from utils.demarchessimplifiees.common.schemas import (
 logging = get_logger(__name__)
 
 
-class CorrectionReasonEnum(str, Enum):
-    incorrect = "incorrect"
-    incomplete = "incomplete"
-    outdated = "outdated"
+def request_demarches_simplifiees(file_path: str, body: dict):
+    query = open_file(
+        path=os.path.join(
+            os.getenv("AIRFLOW_HOME"),
+            file_path,
+        )
+    )
+    body["query"] = query
+    response = requests.post(
+        url=settings.DEMARCHES_SIMPLIFIEES_URL,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {settings.DEMARCHES_SIMPLIFIEES_TOKEN}",
+        },
+        json=body,
+    )
+
+    return json.loads(response.content.decode("utf-8"))
 
 
 def dossier_envoyer_message(
@@ -59,20 +73,9 @@ def dossier_envoyer_message(
     body: str,
     correction: CorrectionReasonEnum = None,
 ) -> dict:
-    query = open_file(
-        path=os.path.join(
-            os.getenv("AIRFLOW_HOME"),
-            "utils/demarchessimplifiees/gql_queries/dossier_envoyer_message.gql",
-        )
-    )
-    response = requests.post(
-        url=settings.DEMARCHES_SIMPLIFIEES_URL,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {settings.DEMARCHES_SIMPLIFIEES_TOKEN}",
-        },
-        json={
-            "query": query,
+    return request_demarches_simplifiees(
+        file_path="utils/demarchessimplifiees/gql_queries/dossier_envoyer_message.gql",
+        body={
             "variables": {
                 "input": {
                     "dossierId": dossier_id,
@@ -84,26 +87,29 @@ def dossier_envoyer_message(
             "operationName": "dossierEnvoyerMessage",
         },
     )
-    return json.loads(response.content.decode("utf-8"))
+
+
+def changement_etat_dossier(dossier_id: str, instructeur_id: str, operation) -> dict:
+    return request_demarches_simplifiees(
+        file_path="utils/demarchessimplifiees/gql_queries/changement_etat_dossier.gql",
+        body={
+            "variables": {
+                "input": {
+                    "dossierId": dossier_id,
+                    "instructeurId": instructeur_id,
+                },
+            },
+            "operationName": operation,
+        },
+    )
 
 
 def get_demarche_from_demarches_simplifiees_page(
     demarche_number: int, after: str = None
 ) -> dict:
-    query = open_file(
-        path=os.path.join(
-            os.getenv("AIRFLOW_HOME"),
-            "utils/demarchessimplifiees/gql_queries/get_demarche.gql",
-        )
-    )
-    response = requests.post(
-        url=settings.DEMARCHES_SIMPLIFIEES_URL,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {settings.DEMARCHES_SIMPLIFIEES_TOKEN}",
-        },
-        json={
-            "query": query,
+    return request_demarches_simplifiees(
+        file_path="utils/demarchessimplifiees/gql_queries/get_demarche.gql",
+        body={
             "variables": {
                 "demarcheNumber": demarche_number,
                 "includeDossiers": True,
@@ -114,7 +120,6 @@ def get_demarche_from_demarches_simplifiees_page(
             "operationName": "getDemarche",
         },
     )
-    return json.loads(response.content.decode("utf-8"))
 
 
 def get_demarche_from_demarches_simplifiees(demarche_number: int) -> dict:

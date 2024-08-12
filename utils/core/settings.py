@@ -11,6 +11,7 @@ class Settings(BaseSettings, case_sensitive=True):
     DEMARCHES_SIMPLIFIEES_URL: str
     DEMARCHES_SIMPLIFIEES_TOKEN: str
     DEMARCHE_ID: int
+    INSTRUCTEUR_ID: str
     SCW_ACCESS_KEY: str
     SCW_SECRET_KEY: str
     SCW_DEFAULT_ORGANIZATION_ID: str
@@ -18,6 +19,7 @@ class Settings(BaseSettings, case_sensitive=True):
     SCW_S3_URL: str
     SCW_S3_REGION: str
     SCW_S3_BUCKET: str
+    DRY_RUN: bool
 
 
 settings = Settings()
