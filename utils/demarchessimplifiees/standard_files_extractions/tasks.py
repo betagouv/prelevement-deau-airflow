@@ -88,13 +88,27 @@ class CollectCiterneData(BaseOperator):
                             )
 
                 except FileError as e:
-
-                    dossier_envoyer_message(
-                        dossier_id=encode64(f"Dossier-{dossier.id_dossier}"),
-                        instructeur_id=settings.INSTRUCTEUR_ID,
-                        body=e.get_message_to_send(),
-                        correction=CorrectionReasonEnum.incorrect,
-                    )
+                    if (not settings.DRY_RUN) and (settings.DEMARCHE_ID != 80149):
+                        dossier_envoyer_message_result = dossier_envoyer_message(
+                            dossier_id=encode64(f"Dossier-{dossier.id_dossier}"),
+                            instructeur_id=settings.INSTRUCTEUR_ID,
+                            body=e.get_message_to_send(),
+                            correction=CorrectionReasonEnum.incorrect,
+                        )
+                        if dossier_envoyer_message_result["data"][
+                            "dossierEnvoyerMessage"
+                        ]["errors"]:
+                            dossier_envoyer_message_result_errors = ". ".join(
+                                [
+                                    f"{error['message']}"
+                                    for error in dossier_envoyer_message_result["data"][
+                                        "dossierEnvoyerMessage"
+                                    ]["errors"]
+                                ]
+                            )
+                            logging.error(
+                                f"[{dossier.id_dossier}] {dossier_envoyer_message_result_errors}"
+                            )
                     error_mail = ErrorMail(
                         demarche_data_brute_id=demarche_data_brute_id,
                         email=e.email,
