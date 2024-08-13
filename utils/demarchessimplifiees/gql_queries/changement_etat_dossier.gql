@@ -1,0 +1,80 @@
+mutation dossierArchiver($input: DossierArchiverInput!) {
+    dossierArchiver(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+mutation dossierPasserEnInstruction($input: DossierPasserEnInstructionInput!) {
+    dossierPasserEnInstruction(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+mutation dossierAccepter($input: DossierAccepterInput!) {
+    dossierAccepter(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+mutation dossierRefuser($input: DossierRefuserInput!) {
+    dossierRefuser(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+mutation dossierClasserSansSuite($input: DossierClasserSansSuiteInput!) {
+    dossierClasserSansSuite(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+
+
+# Quand le dossier a déjà été terminé :
+mutation dossierRepasserEnInstruction($input: DossierRepasserEnInstructionInput!) {
+    dossierRepasserEnInstruction(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}
+
+# Puis éventuellement :
+mutation dossierRepasserEnConstruction($input: DossierRepasserEnConstructionInput!) {
+    dossierRepasserEnConstruction(input: $input) {
+        dossier {
+            id
+        }
+        errors {
+            message
+        }
+    }
+}

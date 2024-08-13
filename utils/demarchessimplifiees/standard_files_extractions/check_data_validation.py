@@ -6,6 +6,8 @@ import pandas as pd
 from utils.common.exceptions import (
     AtLeastOneValueShouldBeProvidedByRowError,
     DateColumnContainsInvalidValuesError,
+    DateFormatError,
+    MissingDateError,
     StandardFileFileExtensionError,
     StandardFileFormatError,
     StandardFileNomPointDePrelevementError,
@@ -70,13 +72,33 @@ def check_values_are_positives(dossier, file, values, sheet_name=None):
 
 
 def check_value_present_per_row(dossier, file, tableur):
-    for row in tableur[3:, 1:]:
+    for row_id in range(len(tableur[3:, 1:])):
+        row = tableur[3:, 1:][row_id]
         if np.all([np.isnan(value) for value in row]):
             raise AtLeastOneValueShouldBeProvidedByRowError(
                 email=dossier.adresse_email_declarant,
                 id_dossier=dossier.id_dossier,
                 file_name=file.nom_fichier,
-                row=3 + row,
+                row=4 + row_id,
+            )
+
+
+def check_date_is_not_missing(dossier, file, dates):
+    for row_id in range(len(dates)):
+        if pd.isna(dates[row_id]):
+            raise MissingDateError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id_dossier,
+                file_name=file.nom_fichier,
+                row=4 + row_id,
+            )
+        if not isinstance(dates[row_id], dt.datetime):
+            raise DateFormatError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id_dossier,
+                file_name=file.nom_fichier,
+                row=4 + row_id,
+                current_value=dates[row_id],
             )
 
 

@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.dialects import postgresql
 
 from utils.db.base_class import Base
 
@@ -9,6 +10,7 @@ class ErrorMail(Base):
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     email = Column(String, comment="Adresse email du déclarant")
     message = Column(String, comment="Message d'erreur")
-    is_sent = Column(
-        Boolean, default=False, comment="Indique si l'erreur a été envoyée par email"
+    # DemarcheDataBrute 1-N
+    demarche_data_brute_id = Column(
+        postgresql.UUID(as_uuid=True), ForeignKey("demarche_data_brute.id")
     )
