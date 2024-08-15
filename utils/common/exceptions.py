@@ -35,6 +35,20 @@ class StandardFileFormatError(FileError):
     MESSAGE = MESSAGES["FORMAT_FILE_ERROR"]
 
 
+class TabsAreInvalidError(FileError):
+    MESSAGE = MESSAGES["TABS_ARE_INVALID"]
+
+    def __init__(self, email, id_dossier, file_name, sheets, expected_sheets):
+        super().__init__(email, id_dossier, file_name)
+        self.sheets = sheets
+        self.expected_sheets = expected_sheets
+
+    def get_error_message(self):
+        return self.MESSAGE.format(
+            sheets=self.sheets, expected_sheets=self.expected_sheets
+        )
+
+
 class TableHeadersError(FileError):
     MESSAGE = MESSAGES["HEADER_IS_NOT_VALID"]
 
@@ -67,14 +81,45 @@ class StandardFileParametersIsMissingError(FileError):
 
 
 class StandardFileParametersBadValueError(FileError):
-    MESSAGE = MESSAGES["ONE_OR_MORE_PARAMETERS_HAVE_BAD_VALUE"]
+    MESSAGE = MESSAGES["PARAMETER_VALUE_IS_WRONG"]
 
-    def __init__(self, email, id_dossier, file_name, sheet_name, parameter_name):
+    def __init__(
+        self,
+        email,
+        id_dossier,
+        file_name,
+        sheet_name,
+        parameter_name,
+        incorrect_value,
+        expected_values,
+    ):
         super().__init__(email, id_dossier, file_name, sheet_name)
         self.parameter_name = parameter_name
+        self.expected_values = expected_values
+        self.incorrect_value = incorrect_value
 
     def get_error_message(self):
-        return self.MESSAGE.format(parameters=self.parameter_name)
+        return self.MESSAGE.format(
+            parameter_name=self.parameter_name,
+            incorrect_value=self.incorrect_value,
+            expected_values=self.expected_values,
+        )
+
+
+class ParameterIsMissingError(FileError):
+    MESSAGE = MESSAGES["PAPAMETER_IS_MISSING"]
+
+    def __init__(
+        self, email, id_dossier, file_name, sheet_name, parameter_name, expected_values
+    ):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.parameter_name = parameter_name
+        self.expected_values = expected_values
+
+    def get_error_message(self):
+        return self.MESSAGE.format(
+            parameter_name=self.parameter_name, expected_values=self.expected_values
+        )
 
 
 class StandardFileDateAndHourColumnsBadValueError(FileError):
@@ -154,3 +199,59 @@ class TableIsEmptyError(FileError):
 
     def __init__(self, email, id_dossier, file_name):
         super().__init__(email, id_dossier, file_name)
+
+
+class SeveralFrequencyInTheSameSheetError(FileError):
+    MESSAGE = MESSAGES["SEVERAL_FREQUENCY_IN_THE_SAME_SHEET"]
+
+    def __init__(self, email, id_dossier, file_name, sheet_name, frequencies):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.frequencies = frequencies
+
+    def get_error_message(self):
+        return self.MESSAGE.format(frequencies=self.frequencies)
+
+
+class StartDateGreaterThanEndDateError(FileError):
+    MESSAGE = MESSAGES["START_DATE_GREATER_THAN_END_DATE"]
+
+    def __init__(self, email, id_dossier, file_name, sheet_name, start_date, end_date):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.start_date = start_date
+        self.end_date = end_date
+
+    def get_error_message(self):
+        return self.MESSAGE.format(
+            start_date=self.start_date.strftime("%Y-%m-%d"),
+            end_date=self.end_date.strftime("%Y-%m-%d"),
+        )
+
+
+class DatesValuesAreNotIncludedInDateRangeError(FileError):
+    MESSAGE = MESSAGES["DATES_VALUES_ARE_NOT_INCLUDED_IN_DATE_RANGE"]
+
+    def __init__(
+        self, email, id_dossier, file_name, start_date, end_date, dates, sheet_name
+    ):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.start_date = start_date
+        self.end_date = end_date
+        self.dates = dates
+
+    def get_error_message(self):
+        return self.MESSAGE.format(
+            start_date=self.start_date.strftime("%Y-%m-%d"),
+            end_date=self.end_date.strftime("%Y-%m-%d"),
+            dates=[d.strftime("%Y-%m-%d %H:%M") for d in self.dates],
+        )
+
+
+class ProfondeurNegatveError(FileError):
+    MESSAGE = MESSAGES["PROFONDEUR_NEGATIVE"]
+
+    def __init__(self, email, id_dossier, file_name, sheet_name, profondeur):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.profondeur = profondeur
+
+    def get_error_message(self):
+        return self.MESSAGE.format(profondeur=self.profondeur)
