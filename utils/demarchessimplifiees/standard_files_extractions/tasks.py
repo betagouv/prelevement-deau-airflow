@@ -8,12 +8,14 @@ from utils.demarchessimplifiees.common.schemas import DossierState
 from utils.demarchessimplifiees.data_extractions.models import (
     CiterneReleve,
     DonneesPointDePrelevement,
+    PrelevementReleve,
     PreprocessedDossier,
 )
 from utils.demarchessimplifiees.standard_files_extractions.services import (
     accepte_dossier_if_not_accepted,
-    process_standard_aep_or_zre_file,
+    process_aep_or_zre_file,
     process_standard_citerne_file,
+    replace_nan_by_none,
     send_error_mail,
 )
 
@@ -78,7 +80,6 @@ class CollectPrelevementData(BaseOperator):
 
     def execute(self, context):
         demarche_data_brute_id = context["ti"].xcom_pull(key="demarche_data_brute_id")
-
         query = (
             select(DonneesPointDePrelevement, PreprocessedDossier)
             .join(
@@ -97,16 +98,56 @@ class CollectPrelevementData(BaseOperator):
         )
         with get_local_session() as session:
             donnees_point_de_prelevements = session.execute(query).all()
-            for donnees_point_de_prelevment, dossier in donnees_point_de_prelevements:
+            for donnees_point_de_prelevement, dossier in donnees_point_de_prelevements:
                 try:
-                    new_prelevements = process_standard_aep_or_zre_file(
-                        donnees_point_de_prelevment, dossier, demarche_data_brute_id
-                    )
+                    dossier_data = []
 
-                    session.add_all(new_prelevements)
-                    session.commit()
-                    accepte_dossier_if_not_accepted(dossier)
-                except FileError as e:
-                    send_error_mail(dossier, e, demarche_data_brute_id, session)
-                # except Exception as e:
-                #    logging.error(f"Error while processing dossier {dossier.id_dossier}: {e}")
+                    for (
+                        fichier_tableur
+                    ) in donnees_point_de_prelevement.fichiers_tableurs:
+                        try:
+                            dossier_data += process_aep_or_zre_file(
+                                donnees_point_de_prelevement, dossier, fichier_tableur
+                            )
+                            current_dossier_prelevement = [
+                                PrelevementReleve(
+                                    demarche_data_brute_id=demarche_data_brute_id,
+                                    id_dossier=dossier.id_dossier,
+                                    date=row["date"],
+                                    valeur=replace_nan_by_none(row["valeur"]),
+                                    nom_parametre=row["nom_parametre"],
+                                    type=row["type"],
+                                    frequence=row["frequence"],
+                                    unite=row["unite"],
+                                    detail_point_suivi=replace_nan_by_none(
+                                        row["detail_point_suivi"]
+                                    ),
+                                    remarque_serie_donnees=replace_nan_by_none(
+                                        row["remarque_serie_donnees"]
+                                    ),
+                                    remarque=replace_nan_by_none(row["remarque"]),
+                                    profondeur=replace_nan_by_none(row["profondeur"]),
+                                    date_debut=row["date_debut"],
+                                    date_fin=row["date_fin"],
+                                    nom_point_prelevement=row["nom_point_prelevement"],
+                                    nom_point_de_prelevement_associe=replace_nan_by_none(
+                                        row["nom_point_de_prelevement_associe"]
+                                    ),
+                                    remarque_fonctionnement_point_de_prelevement=replace_nan_by_none(
+                                        row[
+                                            "remarque_fonctionnement_point_de_prelevement"
+                                        ]
+                                    ),
+                                )
+                                for row in dossier_data
+                            ]
+                            session.add_all(current_dossier_prelevement)
+                            session.commit()
+                            accepte_dossier_if_not_accepted(dossier)
+                        except FileError as e:
+                            send_error_mail(dossier, e, demarche_data_brute_id, session)
+
+                except Exception as e:
+                    raise Exception(
+                        f"Error while processing dossier {dossier.id_dossier}) : {e}"
+                    )

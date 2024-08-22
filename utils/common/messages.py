@@ -22,4 +22,5 @@ MESSAGES = {
     "START_DATE_GREATER_THAN_END_DATE": "La date de début est supérieure à la date de fin. Vérifier que la date de début est inférieure à la date de fin. La date de début est: {start_date}. La date de fin est: {end_date}",
     "DATES_VALUES_ARE_NOT_INCLUDED_IN_DATE_RANGE": "Les dates ne sont pas incluses dans la plage de dates. Vérifier que les dates sont incluses dans la plage de dates. La date de début est: {start_date}. La date de fin est: {end_date}. Les dates non incluses sont: {dates}",
     "PROFONDEUR_NEGATIVE": "La profondeur est négative. Vérifier que la profondeur est positive. La valeur de profondeur incorrecte est: {profondeur}",
+    "COLONNE_HEURE_MAL_REMPLIE": "La colonne d'heure est mal remplie. Vérifier que la colonne d'heure est bien remplie. La valeur incorrecte est: {incorrect_value} à la ligne {row}.",
 }

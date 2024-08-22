@@ -7,6 +7,7 @@ import pandas as pd
 from sqlalchemy import select
 
 from utils.common.exceptions import (
+    ColonneHeureMalRemplieError,
     DateColumnContainsDuplicateValuesError,
     DateColumnContainsInvalidValuesError,
     StandardFileNomPointDePrelevementError,
@@ -27,7 +28,6 @@ from utils.demarchessimplifiees.common.models import ParametreEnum, TypeEnum, Un
 from utils.demarchessimplifiees.common.schemas import CorrectionReasonEnum, DossierState
 from utils.demarchessimplifiees.data_extractions.models import (
     DonneesPointDePrelevement,
-    PrelevementReleve,
     PreprocessedDossier,
 )
 from utils.demarchessimplifiees.data_extractions.services import (
@@ -138,6 +138,42 @@ def remove_empty_columns(array):
     return array[:, columns_to_keep]
 
 
+def process_heures(dossier, file, sheet_name, elements):
+    processed_times = []
+
+    for element_id in range(len(elements)):
+        element = elements[element_id]
+        if isinstance(element, str):
+            parsed_time = dt.datetime.strptime(element, "%H:%M").time()
+            processed_times.append(parsed_time)
+        elif isinstance(element, dt.time):
+            processed_times.append(element)
+        elif isinstance(element, float) and np.isnan(element):
+            processed_times.append(element)
+        elif isinstance(element, float) and not np.isnan(element):
+            raise ColonneHeureMalRemplieError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id_dossier,
+                file_name=file.nom_fichier,
+                sheet_name=sheet_name,
+                incorrect_value=element,
+                row=element_id + 13,
+            )
+        elif isinstance(element, dt.datetime):
+            processed_times.append(element.time())
+        else:
+            raise ColonneHeureMalRemplieError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id_dossier,
+                file_name=file.nom_fichier,
+                sheet_name=sheet_name,
+                incorrect_value=element,
+                row=element_id + 13,
+            )
+
+    return processed_times
+
+
 def process_standard_citerne_file(dossier, file):
     sheets = download_excel(dossier, file)
 
@@ -203,165 +239,136 @@ def process_standard_citerne_file(dossier, file):
     return df
 
 
-def process_standard_aep_or_zre_file(
-    donnees_point_de_prelevment, dossier, demarche_data_brute_id
-):
-    dossier_data = []
+def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
+    file_data = []
 
-    for fichier_tableur in donnees_point_de_prelevment.fichiers_tableurs:
+    sheets = download_excel(donnees_point_de_prelevement.id_dossier, file)
+    sheets = {key.replace(" ", "_"): value for key, value in sheets.items()}
 
-        sheets = download_excel(donnees_point_de_prelevment.id_dossier, fichier_tableur)
-        sheets = {key.replace(" ", "_"): value for key, value in sheets.items()}
+    check_table_sheets_number(dossier, file, sheets, len(STANDARD_V2_SHEETS))
+    check_table_sheets(dossier, file, sheets, STANDARD_V2_SHEETS)
+    first_sheet = convert_sheet_to_array(sheets[STANDARD_V2_SHEETS[0]])
+    common_data = get_first_sheet_data(dossier, file, first_sheet)
+    common_data["id_dossier"] = dossier.id_dossier
+    common_data["demarche_data_brute_id"] = dossier.demarche_data_brute_id
 
-        check_table_sheets_number(
-            dossier, fichier_tableur, sheets, len(STANDARD_V2_SHEETS)
+    for current_sheet_id in range(2, len(STANDARD_V2_SHEETS)):
+        sheet_name = STANDARD_V2_SHEETS[current_sheet_id]
+        current_sheet = convert_sheet_to_array(
+            sheets[STANDARD_V2_SHEETS[current_sheet_id]]
         )
-        check_table_sheets(dossier, fichier_tableur, sheets, STANDARD_V2_SHEETS)
-        first_sheet = convert_sheet_to_array(sheets[STANDARD_V2_SHEETS[0]])
-        common_data = get_first_sheet_data(dossier, fichier_tableur, first_sheet)
-        common_data["id_dossier"] = dossier.id_dossier
-        common_data["demarche_data_brute_id"] = dossier.demarche_data_brute_id
 
-        for current_sheet_id in range(2, len(STANDARD_V2_SHEETS)):
-            sheet_name = STANDARD_V2_SHEETS[current_sheet_id]
-            current_sheet = convert_sheet_to_array(
-                sheets[STANDARD_V2_SHEETS[current_sheet_id]]
+        if sheet_is_empty(current_sheet):
+            continue
+
+        current_sheet = remove_empty_columns(current_sheet)
+
+        values_remarques = [None for _ in range(current_sheet.shape[0] - 12)]
+        if current_sheet[11, -1] == "remarque":
+            values_remarques = current_sheet[12:, -1]
+            current_sheet = current_sheet[:, :-1]
+
+        parameter_names = current_sheet[1, 2:]
+        description_types = current_sheet[2, 2:]
+        frequencies = current_sheet[3, 2:]
+        units = current_sheet[4, 2:]
+        details = current_sheet[5, 2:]
+        depths = current_sheet[6, 2:]
+        start_dates = current_sheet[7, 2:]
+        end_dates = current_sheet[8, 2:]
+        description_serie_donnees_remarque = current_sheet[9, 2:]
+
+        current_sheet_dates = current_sheet[12:, 0]
+        current_sheet_heures = current_sheet[12:, 1]
+        current_sheet_heures = process_heures(
+            dossier, file, sheet_name, current_sheet_heures
+        )
+
+        # Check parameters
+        check_frequency(dossier, file, sheet_name, frequencies)
+        frequency = frequencies[0]
+
+        check_values_in_list(
+            dossier,
+            file,
+            "parameter_name",
+            parameter_names,
+            ParametreEnum._value2member_map_.keys(),
+            sheet_name,
+        )
+        check_values_in_list(
+            dossier,
+            file,
+            "type",
+            description_types,
+            TypeEnum._value2member_map_.keys(),
+            sheet_name,
+        )
+        check_values_in_list(
+            dossier,
+            file,
+            "unite",
+            units,
+            UniteEnum._value2member_map_.keys(),
+            sheet_name,
+        )
+        check_profondeurs(dossier, file, depths, sheet_name)
+
+        check_start_dates_and_end_dates(
+            dossier, file, start_dates, end_dates, sheet_name
+        )
+        start_dates = [
+            start_date.replace(hour=0, minute=0) for start_date in start_dates
+        ]
+        end_dates = [end_date.replace(hour=23, minute=59) for end_date in end_dates]
+
+        datetimes = [
+            (
+                dt.datetime.combine(date.date(), t)
+                if not (isinstance(t, float) and np.isnan(t))
+                else date
             )
+            for date, t in zip(current_sheet_dates, current_sheet_heures)
+        ]
 
-            if sheet_is_empty(current_sheet):
-                continue
+        check_datetimes_are_not_null(dossier, file, datetimes, sheet_name)
 
-            current_sheet = remove_empty_columns(current_sheet)
+        check_datetimes_are_included_in_start_dates_end_dates(
+            dossier, file, start_dates, end_dates, datetimes, sheet_name
+        )
 
-            values_remarques = [None for _ in range(current_sheet.shape[0] - 12)]
-            if current_sheet[11, -1] == "remarque":
-                values_remarques = current_sheet[12:, -1]
-                current_sheet = current_sheet[:, :-1]
+        check_value_present_per_row(
+            dossier,
+            file,
+            current_sheet,
+            sheet_name,
+            remarques=values_remarques,
+            start_row=12,
+            start_column=1,
+        )
 
-            parameter_names = current_sheet[1, 2:]
-            description_types = current_sheet[2, 2:]
-            frequencies = current_sheet[3, 2:]
-            units = current_sheet[4, 2:]
-            details = current_sheet[5, 2:]
-            depths = current_sheet[6, 2:]
-            start_dates = current_sheet[7, 2:]
-            end_dates = current_sheet[8, 2:]
-            description_serie_donnees_remarque = current_sheet[9, 2:]
-
-            current_sheet_dates = current_sheet[12:, 0]
-            current_sheet_heures = current_sheet[12:, 1]
-
-            check_frequency(dossier, fichier_tableur, sheet_name, frequencies)
-            frequency = frequencies[0]
-
-            check_values_in_list(
-                dossier,
-                fichier_tableur,
-                "parameter_name",
-                parameter_names,
-                ParametreEnum._value2member_map_.keys(),
-                sheet_name,
-            )
-            check_values_in_list(
-                dossier,
-                fichier_tableur,
-                "type",
-                description_types,
-                TypeEnum._value2member_map_.keys(),
-                sheet_name,
-            )
-            check_values_in_list(
-                dossier,
-                fichier_tableur,
-                "unite",
-                units,
-                UniteEnum._value2member_map_.keys(),
-                sheet_name,
-            )
-
-            check_profondeurs(dossier, fichier_tableur, depths, sheet_name)
-
-            check_start_dates_and_end_dates(
-                dossier, fichier_tableur, start_dates, end_dates, sheet_name
-            )
-            start_dates = [
-                start_date.replace(hour=0, minute=0) for start_date in start_dates
-            ]
-            end_dates = [end_date.replace(hour=23, minute=59) for end_date in end_dates]
-
-            datetimes = [
-                (
-                    dt.datetime.combine(date.date(), t)
-                    if not (isinstance(t, float) and np.isnan(t))
-                    else date
+        for column_id in range(2, current_sheet.shape[1]):
+            for row_id in range(12, current_sheet.shape[0] - 1):
+                file_data.append(
+                    {
+                        "nom_parametre": parameter_names[column_id - 2],
+                        "type": description_types[column_id - 2],
+                        "frequence": frequency,
+                        "unite": units[column_id - 2],
+                        "profondeur": depths[column_id - 2],
+                        "date_debut": start_dates[column_id - 2],
+                        "date_fin": end_dates[column_id - 2],
+                        "date": datetimes[row_id - 12],
+                        "valeur": current_sheet[row_id, column_id],
+                        "detail_point_suivi": details[column_id - 2],
+                        "remarque_serie_donnees": description_serie_donnees_remarque[
+                            column_id - 2
+                        ],
+                        "remarque": values_remarques[row_id - 12],
+                        **common_data,
+                    }
                 )
-                for date, t in zip(current_sheet_dates, current_sheet_heures)
-            ]
-
-            check_datetimes_are_not_null(
-                dossier, fichier_tableur, datetimes, sheet_name
-            )
-
-            check_datetimes_are_included_in_start_dates_end_dates(
-                dossier, fichier_tableur, start_dates, end_dates, datetimes, sheet_name
-            )
-
-            check_value_present_per_row(
-                dossier,
-                fichier_tableur,
-                current_sheet,
-                sheet_name,
-                remarques=values_remarques,
-                start_row=12,
-                start_column=1,
-            )
-
-            for column_id in range(2, current_sheet.shape[1]):
-                for row_id in range(12, current_sheet.shape[0]):
-                    dossier_data.append(
-                        {
-                            "nom_parametre": parameter_names[column_id - 2],
-                            "type": description_types[column_id - 2],
-                            "frequence": frequency,
-                            "unite": units[column_id - 2],
-                            "profondeur": depths[column_id - 2],
-                            "date_debut": start_dates[column_id - 2],
-                            "date_fin": end_dates[column_id - 2],
-                            "date": datetimes[row_id - 12],
-                            "valeur": current_sheet[row_id, column_id],
-                            "detail_point_suivi": details[column_id - 2],
-                            "remarque_serie_donnees": description_serie_donnees_remarque[
-                                column_id - 2
-                            ],
-                            "remarque": values_remarques[row_id - 12],
-                            **common_data,
-                        }
-                    )
-    new_prelevements = [
-        PrelevementReleve(
-            demarche_data_brute_id=demarche_data_brute_id,
-            id_dossier=dossier.id_dossier,
-            date=row["date"],
-            valeur=replace_nan_by_none(row["valeur"]),
-            nom_parametre=row["nom_parametre"],
-            type=row["type"],
-            frequence=row["frequence"],
-            unite=row["unite"],
-            detail_point_suivi=replace_nan_by_none(row["detail_point_suivi"]),
-            remarque_serie_donnees=replace_nan_by_none(row["remarque_serie_donnees"]),
-            remarque=replace_nan_by_none(row["remarque"]),
-            profondeur=replace_nan_by_none(row["profondeur"]),
-            date_debut=row["date_debut"],
-            date_fin=row["date_fin"],
-            nom_point_prelevement=row["nom_point_prelevement"],
-            nom_point_de_prelevement_associe=row["nom_point_de_prelevement_associe"],
-            remarque_fonctionnement_point_de_prelevement=replace_nan_by_none(
-                row["remarque_fonctionnement_point_de_prelevement"]
-            ),
-        )
-        for row in dossier_data
-    ]
-    return new_prelevements
+        return file_data
 
 
 def accepte_dossier_if_not_accepted(dossier):
@@ -385,6 +392,7 @@ def accepte_dossier_if_not_accepted(dossier):
                 ]
             )
             logging.error(f"[{dossier.id_dossier}] {dossier_accepter_result_errors}")
+        logging.info(f"[{dossier.id_dossier}] Dossier accepté")
 
 
 def send_error_mail(dossier, e, demarche_data_brute_id, session):
