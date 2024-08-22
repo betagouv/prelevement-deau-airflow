@@ -10,6 +10,7 @@ from utils.common.exceptions import (
     ColonneHeureMalRemplieError,
     DateColumnContainsDuplicateValuesError,
     DateColumnContainsInvalidValuesError,
+    PHValueError,
     StandardFileNomPointDePrelevementError,
     TableHeadersError,
     TableIsEmptyError,
@@ -349,6 +350,20 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
 
         for column_id in range(2, current_sheet.shape[1]):
             for row_id in range(12, current_sheet.shape[0] - 1):
+
+                if ParametreEnum(parameter_names[column_id - 2]) == ParametreEnum.PH:
+                    if (
+                        current_sheet[row_id, column_id] < 0
+                        or current_sheet[row_id, column_id] > 14
+                    ):
+                        raise PHValueError(
+                            email=dossier.adresse_email_declarant,
+                            id_dossier=dossier.id_dossier,
+                            file_name=file.nom_fichier,
+                            sheet_name=sheet_name,
+                            incorrect_value=current_sheet[row_id, column_id],
+                            row=row_id + 1,
+                        )
                 file_data.append(
                     {
                         "nom_parametre": parameter_names[column_id - 2],

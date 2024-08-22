@@ -267,3 +267,15 @@ class ColonneHeureMalRemplieError(FileError):
 
     def get_error_message(self):
         return self.MESSAGE.format(incorrect_value=self.incorrect_value, row=self.row)
+
+
+class PHValueError(FileError):
+    MESSAGE = MESSAGES["PH_VALUE_ERROR"]
+
+    def __init__(self, email, id_dossier, file_name, sheet_name, incorrect_value, row):
+        super().__init__(email, id_dossier, file_name, sheet_name)
+        self.incorrect_value = incorrect_value
+        self.row = row
+
+    def get_error_message(self):
+        return self.MESSAGE.format(incorrect_value=self.incorrect_value, row=self.row)
