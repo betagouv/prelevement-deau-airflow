@@ -82,7 +82,6 @@ def make_folder_public(bucket_name: str, folder_name: str):
     result_iterator = paginator.paginate(Bucket=bucket_name, Prefix=folder_name)
 
     for page in result_iterator:
-        print(page)
         if "Contents" in page:
             for obj in page["Contents"]:
                 key = obj["Key"]

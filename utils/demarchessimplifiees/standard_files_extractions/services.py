@@ -395,12 +395,12 @@ def accepte_dossier_if_not_accepted(dossier):
         logging.info(f"[{dossier.id_dossier}] Dossier accepté")
 
 
-def send_error_mail(dossier, e, demarche_data_brute_id, session):
+def send_error_mail(dossier, message, demarche_data_brute_id, session):
     if (not settings.DRY_RUN) and (settings.DEMARCHE_ID != 80149):
         dossier_envoyer_message_result = dossier_envoyer_message(
             dossier_id=encode64(f"Dossier-{dossier.id_dossier}"),
             instructeur_id=settings.INSTRUCTEUR_ID,
-            body=e.get_message_to_send(),
+            body=message,
             correction=CorrectionReasonEnum.incorrect,
         )
         if dossier_envoyer_message_result["data"]["dossierEnvoyerMessage"]["errors"]:
@@ -417,10 +417,10 @@ def send_error_mail(dossier, e, demarche_data_brute_id, session):
             )
     error_mail = ErrorMail(
         demarche_data_brute_id=demarche_data_brute_id,
-        email=e.email,
-        id_dossier=e.id_dossier,
-        message=e.get_message_to_send(),
+        email=dossier.adresse_email_declarant,
+        id_dossier=dossier.id_dossier,
+        message=message,
     )
     session.add(error_mail)
     session.commit()
-    logging.error(e.get_message_to_send())
+    logging.error(message)
