@@ -69,3 +69,22 @@ def download_folder(bucket_name: str, folder_name: str, local_dir: str):
                 # Télécharge le fichier et l'enregistre localement
                 with open(local_file_path, "wb") as f:
                     f.write(download_file(bucket_name, key))
+
+
+def make_folder_public(bucket_name: str, folder_name: str):
+    """
+    Change la visibilité de tous les objets d'un dossier S3, y compris ceux dans les sous-dossiers, pour les rendre publics.
+
+    :param bucket_name: Le nom du bucket S3.
+    :param folder_name: Le nom du dossier dans le bucket S3.
+    """
+    paginator = s3_client.get_paginator("list_objects_v2")
+    result_iterator = paginator.paginate(Bucket=bucket_name, Prefix=folder_name)
+
+    for page in result_iterator:
+        print(page)
+        if "Contents" in page:
+            for obj in page["Contents"]:
+                key = obj["Key"]
+                # Change la visibilité de chaque objet à public-read
+                s3_client.put_object_acl(Bucket=bucket_name, Key=key, ACL="public-read")

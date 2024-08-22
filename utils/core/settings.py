@@ -19,6 +19,7 @@ class Settings(BaseSettings, case_sensitive=True):
     SCW_S3_URL: str
     SCW_S3_REGION: str
     SCW_S3_BUCKET: str
+    SCW_S3_PUBLIC_BUCKET: str
     DRY_RUN: bool
 
 
