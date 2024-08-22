@@ -75,6 +75,7 @@ x-airflow-common:
     SCW_S3_URL: ${SCW_S3_URL:-}
     SCW_S3_REGION: ${SCW_S3_REGION:-}
     SCW_S3_BUCKET: ${SCW_S3_BUCKET:-}
+    SCW_S3_PUBLIC_BUCKET: ${SCW_S3_PUBLIC_BUCKET:-}
     DRY_RUN: ${DRY_RUN:-}
 
     PYTHONPATH: /opt/airflow

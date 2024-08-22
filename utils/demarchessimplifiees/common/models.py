@@ -1,5 +1,58 @@
+from enum import Enum
+
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
+
+
+class ParametreEnum(Enum):
+    CHLORURES = "chlorures"
+    CONDUCTIVITE = "conductivité"
+    DEBIT_PRELEVE = "débit prélevé"
+    DEBIT_RESERVE = "débit réservé"
+    DEBIT_RESTITUE = "débit restitué"
+    NITRATES = "nitrates"
+    NIVEAU_EAU = "niveau d’eau"
+    PH = "pH"
+    RELEVE_INDEX_COMPTEUR = "relevé d’index de compteur"
+    SULFATES = "sulfates"
+    TEMPERATURE = "température"
+    TURBIDITE = "turbidité"
+    VOLUME_PRELEVE = "volume prélevé"
+    VOLUME_RESTITUE = "volume restitué"
+    AUTRE = "autre"
+
+
+class TypeEnum(Enum):
+    VALEUR_BRUTE = "valeur brute"
+    MINIMUM = "minimum"
+    MAXIMUM = "maximum"
+    MOYENNE = "moyenne"
+    MEDIANE = "médiane"
+    DIFFERENCE_INDEX = "différence d’index"
+    AUTRE = "autre"
+
+
+class UniteEnum(Enum):
+    MICRO_SIEMENS_PAR_CM = "µS/cm"
+    DEGRES_CELSIUS = "degrés Celsius"
+    LITRE_PAR_SECONDE = "L/s"
+    METRE_CUBE_PAR_HEURE = "m³/h"
+    METRE_CUBE = "m³"
+    METRE_NIVEAU_DE_GRAVITE = "m NGR"
+    MILIGRAMME_PAR_LITRE = "mg/L"
+    AUTRE = "autre"
+
+
+class FrequenceEnum(Enum):
+    SECONDE = "seconde"
+    MINUTE = "minute"
+    MINUTES_15 = "15 minutes"
+    HEURE = "heure"
+    JOUR = "jour"
+    MOIS = "mois"
+    TRIMESTRE = "trimestre"
+    ANNEE = "année"
+    AUTRE = "autre"
 
 
 class DemarcheDataBruteBase:
@@ -273,8 +326,7 @@ class CiterneReleveBase:
 
 class PrelevementReleveBase:
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
-    date = Column(DateTime, comment="Date du relevé")
-    heure = Column(DateTime, comment="Heure du relevé")
+    date = Column(DateTime, comment="Date et Heure du relevé")
     valeur = Column(Float, comment="Valeur du relevé")
     nom_parametre = Column(String, comment="Nom du paramètre")
     type = Column(String, comment="Type de relevé")
@@ -285,6 +337,7 @@ class PrelevementReleveBase:
     date_debut = Column(DateTime, comment="Date de début de relevé")
     date_fin = Column(DateTime, comment="Date de fin de relevé")
     remarque = Column(String, comment="Remarque sur le relevé")
+    remarque_serie_donnees = Column(String, comment="Remarque sur la série de données")
     nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
     nom_point_de_prelevement_associe = Column(
         String, comment="Nom du point de prélèvement associé"

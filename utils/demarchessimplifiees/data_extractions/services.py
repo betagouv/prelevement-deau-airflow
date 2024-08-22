@@ -124,6 +124,8 @@ def get_demarche_from_demarches_simplifiees_page(
 
 def get_demarche_from_demarches_simplifiees(demarche_number: int) -> dict:
     demarche_dict = get_demarche_from_demarches_simplifiees_page(demarche_number)
+    if "errors" in demarche_dict:
+        raise Exception(f"Une erreur est survenue: {demarche_dict['errors']}")
 
     has_next_page = demarche_dict["data"]["demarche"]["dossiers"]["pageInfo"][
         "hasNextPage"

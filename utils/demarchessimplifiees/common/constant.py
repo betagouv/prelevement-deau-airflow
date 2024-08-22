@@ -1,5 +1,7 @@
 from dateutil.relativedelta import relativedelta
 
+from utils.demarchessimplifiees.common.models import FrequenceEnum
+
 champs_text_db_labels = {
     "Champ-3642770": "coordonnees",
     "Champ-3642774": "adresse_email_declarant",
@@ -98,10 +100,10 @@ STANDARD_V2_SHEETS = (
 )
 
 STANDARD_V2_SHEETS_FREQUENCIES = {
-    "Data_|_T=_15_minutes": "15 minutes",
-    "Data_|_T=1_jour": "jour",
-    "Data_|_T=_1_trimestre": "trimestre",
-    "Data_|_T=_autre": "autre",
+    "Data_|_T=_15_minutes": [FrequenceEnum.MINUTES_15.value],
+    "Data_|_T=1_jour": [FrequenceEnum.JOUR.value],
+    "Data_|_T=_1_trimestre": [FrequenceEnum.TRIMESTRE.value],
+    "Data_|_T=_autre": list(FrequenceEnum._value2member_map_.keys()),
 }
 
 PARAMETER_NAME_CHOOSES = {
@@ -140,18 +142,6 @@ PARAMETER_UNITE_CHOOSES = {
     "m³",
     "m NGR",
     "mg/L",
-    "autre",
-}
-
-PARAMETER_FREQUENCY_CHOOSES = {
-    "seconde",
-    "minute",
-    "15 minutes",
-    "heure",
-    "jour",
-    "mois",
-    "trimestre",
-    "année",
     "autre",
 }
 
