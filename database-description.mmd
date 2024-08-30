@@ -1,0 +1,168 @@
+erDiagram
+    DOSSIER {
+        int id PK
+        bool archive
+        string etat_dossier
+        string sous_etat_dossier
+        datetime derniere_mise_a_jour
+        datetime date_depot
+        datetime date_passage_instruction
+        datetime date_derniere_correction_en_attente
+        datetime date_traitement
+        string motivation_decision
+        string instructeurs
+        string groupe_instructeur
+        string adresse_email_connexion
+        string civilite_declarant
+        string nom_declarant
+        string prenom_declarant
+        string nom_mandataire
+        string prenom_mandataire
+        bool depot_pour_mandataire
+        string adresse_email_declarant
+        string numero_telephone_declarant
+        string statut_declarant
+        string raison_sociale_structure
+        string type_prelevement
+        string numero_arrete_aot
+        int annee_prelevement_camion_citerne
+        string mois_prelevement_camion_citerne
+        bool prelevement_sur_periode_camion_citerne
+        bool prelevement_points_autorises_aot_2023
+        string mode_transmission_donnees_camion_citerne
+        string fichier_tableau_suivi_camion_citerne_filename
+        string fichier_tableau_suivi_camion_citerne_url
+        string fichier_tableau_suivi_camion_citerne_object_storage
+        bool details_prelevements_camion_citerne
+        string nom_point_prelevement
+        string date_activation_point_prelevement
+        bool prelevement_sur_periode_aot_agricole
+        bool donnees_compteur_volumetrique
+        bool panne_compteur
+        float index_avant_la_panne_ou_changement_de_compteur
+        float index_apres_la_panne_ou_changement_de_compteur
+        string numero_serie_compteur
+        bool compteur_lecture_directe
+        string coefficient_multiplicateur_compteur
+        string commentaire
+        string note_facilite_utilisation
+        string remarque_note
+        string temps_remplissage_questionnaire
+        string amelioration_temps_remplissage
+        string declarant_demarche_simplifiee
+        string televerseur_tableur_brutes
+        string raison_non_declaration_preleveur
+        bool rappel_obligation_mensuelle_declaration
+        string demande_documentation
+        string amelioration_documentation
+        string developpement_interface_visualisation
+        bool acceptation_contact_deal
+        bool validation_informations
+    }
+
+    PRELEVEMENTCITERNEVALEURPARVALEUR {
+        int id PK
+        datetime date
+        int annee
+        float valeur
+        string nom_point_prelevement
+        int id_dossier FK
+    }
+
+    DONNEESPOINTDEPRELEVEMENTAEPZRE {
+        int id PK
+        string nom_point_prelevement
+        int ligne
+        string fichier_prelevement_filename
+        string fichier_prelevement_url
+        string fichier_prelevement_object_storage
+        string autre_document_suivi_filename
+        string autre_document_suivi_url
+        string autre_document_suivi_object_storage
+        int id_dossier FK
+    }
+
+    RELEVERINDEX {
+        int id PK
+        datetime date
+        float valeur
+        int id_dossier FK
+    }
+
+    AVIS {
+        int id PK
+        string question
+        string reponse
+        datetime date_question
+        datetime date_reponse
+        string email_claimant
+        string email_expert
+        int id_dossier FK
+    }
+
+    MESSAGE {
+        int id PK
+        datetime date_creation
+        string email
+        string body
+        int id_dossier FK
+    }
+
+    DONNEESPRELEVEMENTCITERNE {
+        int id PK
+        datetime date_releve
+        float volume
+        string nom_point_prelevement
+        int id_dossier FK
+    }
+
+    DONNEESPRELEVEMENTAEPZRE {
+        datetime date
+        float valeur
+        string nom_parametre
+        string type
+        string frequence
+        string unite
+        string detail_point_suivi
+        float profondeur
+        datetime date_debut
+        datetime date_fin
+        string remarque
+        string remarque_serie_donnees
+        string nom_point_prelevement
+        string nom_point_de_prelevement_associe
+        string remarque_fonctionnement_point_de_prelevement
+        int donnees_point_de_prelevement_aep_zre_id FK
+    }
+
+    MESSAGEPIECECOINTE {
+        int id PK
+        string filename
+        string url
+        string object_storage
+        int id_message FK
+    }
+
+    AVISPIECECOINTE {
+        int id PK
+        string filename
+        string url
+        string object_storage
+        int id_avis FK
+    }
+
+    ERRORMAIL {
+    int id_dossier
+    string email
+    string message
+    }
+
+    DOSSIER ||--o{ PRELEVEMENTCITERNEVALEURPARVALEUR : contient
+    DOSSIER ||--o{ DONNEESPOINTDEPRELEVEMENTAEPZRE : contient
+    DOSSIER ||--o{ RELEVERINDEX : contient
+    DOSSIER ||--o{ AVIS : contient
+    DOSSIER ||--o{ MESSAGE : contient
+    DOSSIER ||--o{ DONNEESPRELEVEMENTCITERNE : contient
+    MESSAGE ||--o{ MESSAGEPIECECOINTE : contient
+    AVIS ||--o{ AVISPIECECOINTE : contient
+    DONNEESPOINTDEPRELEVEMENTAEPZRE ||--o{ DONNEESPRELEVEMENTAEPZRE : contient
