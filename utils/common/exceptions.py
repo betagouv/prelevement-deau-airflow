@@ -122,21 +122,6 @@ class ParameterIsMissingError(FileError):
         )
 
 
-class StandardFileDateAndHourColumnsBadValueError(FileError):
-    MESSAGE = MESSAGES["DATE_AND_HOUR_COLUMNS_BAD_VALUE"]
-
-    def __init__(self, email, id_dossier, file_name, sheet_name, rows):
-        super().__init__(email, id_dossier, file_name, sheet_name)
-        self.rows = rows
-
-    def get_error_message(self):
-        return self.MESSAGE.format(rows=self.rows)
-
-
-class DateFrequencyMismatchException(FileError):
-    MESSAGE = MESSAGES["DATE_FREQUENCY_MISMATCH"]
-
-
 class DateColumnContainsInvalidValuesError(FileError):
     MESSAGE = MESSAGES["DATE_COLUMN_CONTAINS_INVALID_VALUES"]
 

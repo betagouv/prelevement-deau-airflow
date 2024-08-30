@@ -1,15 +1,17 @@
 import datetime as dt
 from collections import Counter
 from io import BytesIO
+from typing import List
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import and_, or_
 
 from utils.common.exceptions import (
     ColonneHeureMalRemplieError,
     DateColumnContainsDuplicateValuesError,
     DateColumnContainsInvalidValuesError,
+    FileError,
     PHValueError,
     StandardFileNomPointDePrelevementError,
     TableHeadersError,
@@ -19,21 +21,34 @@ from utils.common.logging import get_logger
 from utils.common.object_storage_client import download_file
 from utils.common.utils import encode64, get_file_extension
 from utils.core.settings import settings
+from utils.db.init_db import get_local_session
 from utils.demarchessimplifiees.common.constant import (
-    FREQUENCIES,
     STANDARD_V1_COLUMNS,
     STANDARD_V2_SHEETS,
     extract_file_engine,
 )
-from utils.demarchessimplifiees.common.models import ParametreEnum, TypeEnum, UniteEnum
-from utils.demarchessimplifiees.common.schemas import CorrectionReasonEnum, DossierState
-from utils.demarchessimplifiees.data_extractions.models import (
-    DonneesPointDePrelevement,
-    PreprocessedDossier,
+from utils.demarchessimplifiees.common.schemas import (
+    CorrectionReasonEnum,
+    ParametreEnum,
+    TypeEnum,
+    UniteEnum,
 )
-from utils.demarchessimplifiees.data_extractions.services import (
+from utils.demarchessimplifiees.common.services import (
     changement_etat_dossier,
     dossier_envoyer_message,
+)
+from utils.demarchessimplifiees.data_extraction.models import (
+    DonneesPointDePrelevementAPEZRE,
+    DonneesPrelevementAEPZRE,
+    DonneesPrelevementCiterne,
+    Dossier,
+    PrelevementCiterneValeurParValeur,
+)
+from utils.demarchessimplifiees.data_extraction.schemas import (
+    DossierEtatEnum,
+    DossierSousEtatEnum,
+    PieceJointeSerializer,
+    TypePrelevementEnum,
 )
 from utils.demarchessimplifiees.errors_management.models import ErrorMail
 from utils.demarchessimplifiees.standard_files_extractions.check_data_validation import (
@@ -41,7 +56,7 @@ from utils.demarchessimplifiees.standard_files_extractions.check_data_validation
     check_datetimes_are_included_in_start_dates_end_dates,
     check_datetimes_are_not_null,
     check_file_extension,
-    check_frequency,
+    check_frequencies,
     check_profondeurs,
     check_start_dates_and_end_dates,
     check_table_sheets,
@@ -54,45 +69,44 @@ from utils.demarchessimplifiees.standard_files_extractions.check_data_validation
 logging = get_logger(__name__)
 
 
-def get_donnees_point_de_prelevement_by_ddb_id(session, demarche_data_brute_id):
-    query = select(DonneesPointDePrelevement).filter(
-        DonneesPointDePrelevement.demarche_data_brute_id == demarche_data_brute_id
+def send_error_mail(dossier: Dossier, message: str, session):
+    if (not settings.DRY_RUN) and (settings.DEMARCHE_ID != 80149):
+        dossier_envoyer_message_result = dossier_envoyer_message(
+            dossier_id=encode64(f"Dossier-{dossier.id}"),
+            instructeur_id=settings.INSTRUCTEUR_ID,
+            body=message,
+            correction=CorrectionReasonEnum.incorrect,
+        )
+        if dossier_envoyer_message_result["data"]["dossierEnvoyerMessage"]["errors"]:
+            dossier_envoyer_message_result_errors = ". ".join(
+                [
+                    f"{error['message']}"
+                    for error in dossier_envoyer_message_result["data"][
+                        "dossierEnvoyerMessage"
+                    ]["errors"]
+                ]
+            )
+            logging.error(f"[{dossier.id}] {dossier_envoyer_message_result_errors}")
+    error_mail = ErrorMail(
+        email=dossier.adresse_email_declarant,
+        id_dossier=dossier.id,
+        message=message,
     )
-    return session.execute(query).fetchall()
+    session.add(error_mail)
+    session.commit()
+    logging.error(message)
 
 
-def get_preprocessed_dossier(session, demarche_data_brute_id, id_dossier):
-    query = select(PreprocessedDossier).filter(
-        PreprocessedDossier.demarche_data_brute_id == demarche_data_brute_id,
-        PreprocessedDossier.id_dossier == id_dossier,
-    )
-    return session.execute(query).fetchone()
+def replace_nan_by_none(value):
+    return None if isinstance(value, float) and pd.isna(value) else value
 
 
-def convert_sheet_to_array(sheet):
-    return np.vstack([sheet.columns.values, sheet.to_numpy()])
-
-
-def string_to_timedelta(time_str):
-    hours, minutes = map(int, time_str.split(":"))
-    return dt.timedelta(hours=hours, minutes=minutes)
-
-
-def generate_dates_array(start_date, end_date, frequency):
-    dates = []
-    current_date = start_date
-    while current_date <= end_date:
-        dates.append(current_date)
-        current_date += FREQUENCIES[frequency]
-    return dates
-
-
-def download_excel(dossier, file):
-    file_extension = get_file_extension(file.object_storage_key)
+def download_excel(
+    dossier: Dossier, file: PieceJointeSerializer
+) -> dict[str, pd.DataFrame]:
+    file_extension = get_file_extension(file.object_storage)
     check_file_extension(dossier, file)
-    if file_extension not in extract_file_engine:
-        raise ValueError(f"Unsupported file extension: {file_extension}")
-    downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage_key)
+    downloaded_file = download_file(settings.SCW_S3_BUCKET, file.object_storage)
     file_content = BytesIO(downloaded_file)
     sheets = pd.read_excel(
         file_content,
@@ -102,16 +116,42 @@ def download_excel(dossier, file):
     return sheets
 
 
-def replace_nan_by_none(value):
-    return None if isinstance(value, float) and pd.isna(value) else value
+def convert_sheet_to_array(sheet: pd.DataFrame) -> np.array:
+    return np.vstack([sheet.columns.values, sheet.to_numpy()])
 
 
-def get_first_sheet_data(dossier, file, sheet):
+def sheet_is_empty(sheet: np.array) -> bool:
+    return len(sheet[1:, 1]) <= 11
+
+
+def remove_empty_columns(sheet: np.array) -> np.array:
+    columns_to_keep = [0, 1]
+    for i in range(2, 10):
+        if not all(
+            [isinstance(cell, float) and np.isnan(cell) for cell in sheet[12:, i]]
+        ):
+            columns_to_keep.append(i)
+    return sheet[:, columns_to_keep]
+
+
+def remove_empty_rows(sheet: np.array) -> np.array:
+    rows_to_keep = [i for i in range(12)]
+    for i in range(12, sheet.shape[0]):
+        if not all(
+            [isinstance(cell, float) and np.isnan(cell) for cell in sheet[i, :]]
+        ):
+            rows_to_keep.append(i)
+    return sheet[rows_to_keep, :]
+
+
+def get_first_sheet_data(
+    dossier: Dossier, file: PieceJointeSerializer, sheet: np.array
+) -> dict:
     if sheet.shape[1] != 2 or sheet[2, 1] == np.nan:
         raise StandardFileNomPointDePrelevementError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
         )
 
     return {
@@ -121,67 +161,52 @@ def get_first_sheet_data(dossier, file, sheet):
     }
 
 
-def sheet_is_empty(sheet):
-    return len(sheet[1:, 1]) <= 11
-
-
-def remove_empty_columns(array):
-    nb_columns = array.shape[1]
-
-    columns_to_keep = [0, 1]
-
-    for i in range(2, nb_columns):
-        if not all(
-            [isinstance(cell, float) and np.isnan(cell) for cell in array[12:, i]]
-        ):
-            columns_to_keep.append(i)
-
-    return array[:, columns_to_keep]
-
-
-def process_heures(dossier, file, sheet_name, elements):
+def process_heures(
+    dossier: Dossier, file: PieceJointeSerializer, sheet_name: str, heures: np.array
+) -> list:
     processed_times = []
 
-    for element_id in range(len(elements)):
-        element = elements[element_id]
-        if isinstance(element, str):
-            parsed_time = dt.datetime.strptime(element, "%H:%M").time()
+    for heure_id in range(len(heures)):
+        current_heure = heures[heure_id]
+        if isinstance(current_heure, str):
+            parsed_time = dt.datetime.strptime(current_heure, "%H:%M").time()
             processed_times.append(parsed_time)
-        elif isinstance(element, dt.time):
-            processed_times.append(element)
-        elif isinstance(element, float) and np.isnan(element):
-            processed_times.append(element)
-        elif isinstance(element, float) and not np.isnan(element):
+        elif isinstance(current_heure, dt.time):
+            processed_times.append(current_heure)
+        elif isinstance(current_heure, float) and np.isnan(current_heure):
+            processed_times.append(current_heure)
+        elif isinstance(current_heure, float) and not np.isnan(current_heure):
             raise ColonneHeureMalRemplieError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
-                incorrect_value=element,
-                row=element_id + 13,
+                incorrect_value=current_heure,
+                row=heure_id + 13,
             )
-        elif isinstance(element, dt.datetime):
-            processed_times.append(element.time())
+        elif isinstance(current_heure, dt.datetime):
+            processed_times.append(current_heure.time())
         else:
             raise ColonneHeureMalRemplieError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
-                incorrect_value=element,
-                row=element_id + 13,
+                incorrect_value=current_heure,
+                row=heure_id + 13,
             )
 
     return processed_times
 
 
-def process_standard_citerne_file(dossier, file):
-    sheets = download_excel(dossier, file)
-
-    check_table_sheets_number(dossier, file, sheets, 1)
+def process_standard_citerne_file(
+    dossier: Dossier, fichier_citerne: PieceJointeSerializer
+) -> pd.DataFrame:
+    sheets = download_excel(dossier, fichier_citerne)
+    check_table_sheets_number(dossier, fichier_citerne, sheets, 1)
 
     sheet = sheets[next(iter(sheets))]
-    tableur = convert_sheet_to_array(sheet)
+    tableur: np.array = convert_sheet_to_array(sheet)
     headers = tuple(col.replace("\r", "").replace("\n", "") for col in tableur[2])
 
     dates = tableur[3:, 0]
@@ -189,69 +214,69 @@ def process_standard_citerne_file(dossier, file):
     if headers != STANDARD_V1_COLUMNS:
         raise TableHeadersError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=fichier_citerne.filename,
             sheet_name=None,
             headers=headers,
             expected_headers=STANDARD_V1_COLUMNS,
         )
-
     if None in dates:
         raise DateColumnContainsInvalidValuesError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=fichier_citerne.filename,
         )
 
-    check_date_is_not_missing(dossier, file, dates)
+    check_date_is_not_missing(dossier, fichier_citerne, dates)
     duplicated_dates = [date for date, count in Counter(dates).items() if count > 1]
     if duplicated_dates:
         raise DateColumnContainsDuplicateValuesError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=fichier_citerne.filename,
             duplicated_dates=duplicated_dates,
             sheet_name=None,
         )
 
-    check_value_present_per_row(dossier, file, tableur)
-    check_values_are_positives(dossier, file, tableur[3:, 1:].flatten())
+    check_value_present_per_row(dossier, fichier_citerne, tableur)
+    check_values_are_positives(dossier, fichier_citerne, tableur[3:, 1:].flatten())
 
     df_data = {
         "date_releve": [],
         "volume": [],
-        "point_prelevement": [],
-        "id_dossier": dossier.id_dossier,
-        "demarche_data_brute_id": dossier.demarche_data_brute_id,
+        "nom_point_prelevement": [],
+        "id_dossier": dossier.id,
     }
 
     for col_id in range(1, len(tableur[0])):
         df_data["date_releve"].extend(dates)
         df_data["volume"].extend(tableur[3:, col_id])
-        df_data["point_prelevement"].extend([headers[col_id]] * len(dates))
+        df_data["nom_point_prelevement"].extend([headers[col_id]] * len(dates))
     df = pd.DataFrame(data=df_data)
     df = df[df.volume.notna()].reset_index(drop=True)
     if df.empty:
         raise TableIsEmptyError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=fichier_citerne.filename,
         )
     return df
 
 
-def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
+def process_aep_or_zre_file(
+    dossier: Dossier,
+    donnee_point_de_prelevement: DonneesPointDePrelevementAPEZRE,
+    file: PieceJointeSerializer,
+):
     file_data = []
-
-    sheets = download_excel(donnees_point_de_prelevement.id_dossier, file)
+    sheets = download_excel(dossier, file)
     sheets = {key.replace(" ", "_"): value for key, value in sheets.items()}
 
     check_table_sheets_number(dossier, file, sheets, len(STANDARD_V2_SHEETS))
-    check_table_sheets(dossier, file, sheets, STANDARD_V2_SHEETS)
+    check_table_sheets(dossier, file, tuple(sheets.keys()), STANDARD_V2_SHEETS)
     first_sheet = convert_sheet_to_array(sheets[STANDARD_V2_SHEETS[0]])
     common_data = get_first_sheet_data(dossier, file, first_sheet)
-    common_data["id_dossier"] = dossier.id_dossier
-    common_data["demarche_data_brute_id"] = dossier.demarche_data_brute_id
+    common_data["id_dossier"] = dossier.id
 
     for current_sheet_id in range(2, len(STANDARD_V2_SHEETS)):
         sheet_name = STANDARD_V2_SHEETS[current_sheet_id]
@@ -261,8 +286,8 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
 
         if sheet_is_empty(current_sheet):
             continue
-
         current_sheet = remove_empty_columns(current_sheet)
+        current_sheet = remove_empty_rows(current_sheet)
 
         values_remarques = [None for _ in range(current_sheet.shape[0] - 12)]
         if current_sheet[11, -1] == "remarque":
@@ -286,9 +311,8 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
         )
 
         # Check parameters
-        check_frequency(dossier, file, sheet_name, frequencies)
+        check_frequencies(dossier, file, sheet_name, frequencies)
         frequency = frequencies[0]
-
         check_values_in_list(
             dossier,
             file,
@@ -322,8 +346,7 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
             start_date.replace(hour=0, minute=0) for start_date in start_dates
         ]
         end_dates = [end_date.replace(hour=23, minute=59) for end_date in end_dates]
-
-        datetimes = [
+        datetimes: List[dt.datetime] = [
             (
                 dt.datetime.combine(date.date(), t)
                 if not (isinstance(t, float) and np.isnan(t))
@@ -331,23 +354,19 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
             )
             for date, t in zip(current_sheet_dates, current_sheet_heures)
         ]
-
         check_datetimes_are_not_null(dossier, file, datetimes, sheet_name)
-
         check_datetimes_are_included_in_start_dates_end_dates(
             dossier, file, start_dates, end_dates, datetimes, sheet_name
         )
-
         check_value_present_per_row(
-            dossier,
-            file,
-            current_sheet,
-            sheet_name,
+            dossier=dossier,
+            file=file,
+            tableur=current_sheet,
+            sheet_name=sheet_name,
             remarques=values_remarques,
             start_row=12,
             start_column=1,
         )
-
         for column_id in range(2, current_sheet.shape[1]):
             for row_id in range(12, current_sheet.shape[0] - 1):
 
@@ -358,14 +377,15 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
                     ):
                         raise PHValueError(
                             email=dossier.adresse_email_declarant,
-                            id_dossier=dossier.id_dossier,
-                            file_name=file.nom_fichier,
+                            id_dossier=dossier.id,
+                            file_name=file.filename,
                             sheet_name=sheet_name,
                             incorrect_value=current_sheet[row_id, column_id],
                             row=row_id + 1,
                         )
                 file_data.append(
                     {
+                        "donnees_point_de_prelevement_aep_zre_id": donnee_point_de_prelevement.id,
                         "nom_parametre": parameter_names[column_id - 2],
                         "type": description_types[column_id - 2],
                         "frequence": frequency,
@@ -386,14 +406,14 @@ def process_aep_or_zre_file(donnees_point_de_prelevement, dossier, file):
         return file_data
 
 
-def accepte_dossier_if_not_accepted(dossier):
+def accepte_dossier_if_not_accepted(dossier: Dossier):
     if (
-        (DossierState(dossier.etat_dossier) == DossierState.EN_INSTRUCTION)
+        (DossierEtatEnum(dossier.etat_dossier) == DossierEtatEnum.EN_INSTRUCTION)
         and (not settings.DRY_RUN)
         and (settings.DEMARCHE_ID != 80149)
     ):
         dossier_accepter_result = changement_etat_dossier(
-            dossier_id=encode64(f"Dossier-{dossier.id_dossier}"),
+            dossier_id=encode64(f"Dossier-{dossier.id}"),
             instructeur_id=settings.INSTRUCTEUR_ID,
             operation="dossierAccepter",
         )
@@ -406,36 +426,159 @@ def accepte_dossier_if_not_accepted(dossier):
                     ]
                 ]
             )
-            logging.error(f"[{dossier.id_dossier}] {dossier_accepter_result_errors}")
-        logging.info(f"[{dossier.id_dossier}] Dossier accepté")
+            logging.error(f"[{dossier.id}] {dossier_accepter_result_errors}")
+        logging.info(f"[{dossier.id}] Dossier accepté")
 
 
-def send_error_mail(dossier, message, demarche_data_brute_id, session):
-    if (not settings.DRY_RUN) and (settings.DEMARCHE_ID != 80149):
-        dossier_envoyer_message_result = dossier_envoyer_message(
-            dossier_id=encode64(f"Dossier-{dossier.id_dossier}"),
-            instructeur_id=settings.INSTRUCTEUR_ID,
-            body=message,
-            correction=CorrectionReasonEnum.incorrect,
+def collect_citerne_data():
+    with get_local_session() as session:
+        query_dossiers_fichier_citerne = (
+            session.query(Dossier)
+            .filter(
+                Dossier.type_prelevement
+                == TypePrelevementEnum.PRELEVEMENT_CAMION_CITERNE
+            )
+            .filter(
+                or_(
+                    Dossier.etat_dossier.in_(
+                        [DossierEtatEnum.EN_INSTRUCTION, DossierEtatEnum.ACCEPTE]
+                    ),
+                    and_(
+                        Dossier.etat_dossier == DossierEtatEnum.EN_CONSTRUCTION,
+                        Dossier.sous_etat_dossier == DossierSousEtatEnum.CORRIGE,
+                    ),
+                ),
+                Dossier.fichier_tableau_suivi_camion_citerne_object_storage.isnot(None),
+            )
         )
-        if dossier_envoyer_message_result["data"]["dossierEnvoyerMessage"]["errors"]:
-            dossier_envoyer_message_result_errors = ". ".join(
-                [
-                    f"{error['message']}"
-                    for error in dossier_envoyer_message_result["data"][
-                        "dossierEnvoyerMessage"
-                    ]["errors"]
+
+    for dossier in query_dossiers_fichier_citerne:
+        fichier_citerne = PieceJointeSerializer.model_validate(
+            {
+                "filename": dossier.fichier_tableau_suivi_camion_citerne_filename,
+                "url": dossier.fichier_tableau_suivi_camion_citerne_url,
+                "object_storage": dossier.fichier_tableau_suivi_camion_citerne_object_storage,
+            }
+        )
+        try:
+            data = process_standard_citerne_file(dossier, fichier_citerne)
+            donnees_prelevement_citerne = data.apply(
+                lambda x: DonneesPrelevementCiterne(**x), axis=1
+            )
+            session.add_all(donnees_prelevement_citerne)
+            accepte_dossier_if_not_accepted(dossier)
+            session.commit()
+        except FileError as e:
+            send_error_mail(dossier, e.get_message_to_send(), session)
+            logging.error(f"[{dossier.id}] FileError : {e}")
+        except Exception as e:
+            logging.error(f"Error processing dossier {dossier.id}: {e}")
+
+
+def collect_prelevement_aep_zre():
+    with get_local_session() as session:
+        query_dossiers_ape_zre = session.query(Dossier).filter(
+            and_(
+                Dossier.type_prelevement == TypePrelevementEnum.PRELEVEMENT_APE_ZRE,
+                or_(
+                    Dossier.etat_dossier.in_(
+                        [DossierEtatEnum.EN_INSTRUCTION, DossierEtatEnum.ACCEPTE]
+                    ),
+                    and_(
+                        Dossier.etat_dossier == DossierEtatEnum.EN_CONSTRUCTION,
+                        Dossier.sous_etat_dossier == DossierSousEtatEnum.CORRIGE,
+                    ),
+                ),
+            )
+        )
+
+        # Parcourir les dossiers
+        for dossier in query_dossiers_ape_zre:
+            dossier_data = []
+            dossier_errors = []
+
+            dossier_donnees_point_de_prelevement_aep_zre: List[
+                DonneesPointDePrelevementAPEZRE
+            ] = dossier.donnees_point_de_prelevement_aep_zre
+            for (
+                donnee_point_de_prelevement
+            ) in dossier_donnees_point_de_prelevement_aep_zre:
+                try:
+                    fichier_citerne = PieceJointeSerializer.model_validate(
+                        {
+                            "filename": donnee_point_de_prelevement.fichier_prelevement_filename,
+                            "url": donnee_point_de_prelevement.fichier_prelevement_url,
+                            "object_storage": donnee_point_de_prelevement.fichier_prelevement_object_storage,
+                        }
+                    )
+                    data = process_aep_or_zre_file(
+                        dossier, donnee_point_de_prelevement, fichier_citerne
+                    )
+                    dossier_data += data
+                except FileError as e:
+                    dossier_errors.append(e.get_message_to_send())
+                    logging.error(f"[{dossier.id}] FileError : {e}")
+                except Exception as e:
+                    logging.error(f"[{dossier.id}] exception : {e}")
+
+            if dossier_errors:
+                send_error_mail(dossier, "\n".join(dossier_errors), session)
+            else:
+                donnees_prelevement_aep_zre = [
+                    DonneesPrelevementAEPZRE(
+                        donnees_point_de_prelevement_aep_zre_id=donnee_point_de_prelevement.id,
+                        date=x.get("date"),
+                        valeur=x.get("valeur"),
+                        nom_parametre=x.get("nom_parametre"),
+                        type=x.get("type"),
+                        frequence=x.get("frequence"),
+                        unite=x.get("unite"),
+                        detail_point_suivi=replace_nan_by_none(
+                            x.get("detail_point_suivi")
+                        ),
+                        remarque_serie_donnees=replace_nan_by_none(
+                            x.get("remarque_serie_donnees")
+                        ),
+                        remarque=replace_nan_by_none(x.get("remarque")),
+                        profondeur=replace_nan_by_none(x.get("profondeur")),
+                        date_debut=x.get("date_debut"),
+                        date_fin=x.get("date_fin"),
+                        nom_point_prelevement=x.get("nom_point_prelevement"),
+                        nom_point_de_prelevement_associe=replace_nan_by_none(
+                            x.get("nom_point_de_prelevement_associe")
+                        ),
+                        remarque_fonctionnement_point_de_prelevement=replace_nan_by_none(
+                            x.get("remarque_fonctionnement_point_de_prelevement")
+                        ),
+                    )
+                    for x in dossier_data
                 ]
+                session.add_all(donnees_prelevement_aep_zre)
+                session.commit()
+                accepte_dossier_if_not_accepted(dossier)
+
+
+def changement_etat_prelevement_autre_type():
+    with get_local_session() as session:
+        query_dossiers_autre_prelevement = session.query(Dossier).filter(
+            Dossier.type_prelevement == TypePrelevementEnum.PRELEVEMENT_AUTRE,
+            Dossier.etat_dossier.in_([DossierEtatEnum.EN_INSTRUCTION]),
+        )
+
+        for dossier in query_dossiers_autre_prelevement:
+            accepte_dossier_if_not_accepted(dossier)
+
+
+def changement_etat_citerne_valeur_par_valeur():
+    with get_local_session() as session:
+        query_dossiers_citerne_valeur_par_valeur = session.query(Dossier).where(
+            Dossier.id.in_(
+                session.query(
+                    PrelevementCiterneValeurParValeur.id_dossier
+                ).scalar_subquery()
             )
-            logging.error(
-                f"[{dossier.id_dossier}] {dossier_envoyer_message_result_errors}"
-            )
-    error_mail = ErrorMail(
-        demarche_data_brute_id=demarche_data_brute_id,
-        email=dossier.adresse_email_declarant,
-        id_dossier=dossier.id_dossier,
-        message=message,
-    )
-    session.add(error_mail)
-    session.commit()
-    logging.error(message)
+        )
+
+        for dossier in query_dossiers_citerne_valeur_par_valeur:
+            if Dossier.prelevements_citerne_valeur_par_valeur:
+                accepte_dossier_if_not_accepted(dossier)
