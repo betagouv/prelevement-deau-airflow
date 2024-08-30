@@ -3,8 +3,8 @@ import os
 
 import requests
 
+from utils.common.utils import open_file
 from utils.core.settings import settings
-from utils.core.tools import open_file
 from utils.demarchessimplifiees.common.schemas import CorrectionReasonEnum
 
 
