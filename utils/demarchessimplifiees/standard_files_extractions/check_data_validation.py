@@ -1,11 +1,11 @@
 import datetime as dt
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 from utils.common.exceptions import (
     AtLeastOneValueShouldBeProvidedByRowError,
-    DateColumnContainsInvalidValuesError,
     DateFormatError,
     DatesValuesAreNotIncludedInDateRangeError,
     MissingDateError,
@@ -15,7 +15,6 @@ from utils.common.exceptions import (
     StandardFileFileExtensionError,
     StandardFileFormatError,
     StandardFileParametersBadValueError,
-    StandardFileParametersIsMissingError,
     StartDateGreaterThanEndDateError,
     TabsAreInvalidError,
     ValuesAreNotPositiveError,
@@ -25,52 +24,64 @@ from utils.demarchessimplifiees.common.constant import (
     STANDARD_V2_SHEETS_FREQUENCIES,
     TABLE_FILES_EXTENSIONS,
 )
+from utils.demarchessimplifiees.data_extraction.models import Dossier
+from utils.demarchessimplifiees.data_extraction.schemas import PieceJointeSerializer
 
 
-def check_file_extension(dossier, file):
-    file_extension = get_file_extension(file.object_storage_key)
+def check_file_extension(dossier: Dossier, file: PieceJointeSerializer):
+    file_extension = get_file_extension(file.object_storage)
     if file_extension in TABLE_FILES_EXTENSIONS:
         return True
     raise StandardFileFileExtensionError(
         email=dossier.adresse_email_declarant,
-        id_dossier=dossier.id_dossier,
-        file_name=file.nom_fichier,
+        id_dossier=dossier.id,
+        file_name=file.filename,
     )
 
 
-def check_table_sheets_number(dossier, file, sheets, number):
-    if len(sheets) == number:
+def check_table_sheets_number(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    sheets: dict[str, pd.DataFrame],
+    sheets_tabs_number: int,
+):
+    if len(sheets) == sheets_tabs_number:
         return True
     raise StandardFileFormatError(
         email=dossier.adresse_email_declarant,
-        id_dossier=dossier.id_dossier,
-        file_name=file.nom_fichier,
+        id_dossier=dossier.id,
+        file_name=file.filename,
     )
 
 
-def check_table_sheets(dossier, file, sheets, expected_sheets):
-    if tuple(sheets.keys()) == expected_sheets:
+def check_table_sheets(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    sheets_tabs: Tuple,
+    expected_sheets_tabs: Tuple[str],
+):
+    if sheets_tabs == expected_sheets_tabs:
         return True
     raise TabsAreInvalidError(
         email=dossier.adresse_email_declarant,
-        id_dossier=dossier.id_dossier,
-        file_name=file.nom_fichier,
-        sheets=sheets.keys(),
-        expected_sheets=expected_sheets,
+        id_dossier=dossier.id,
+        file_name=file.filename,
+        sheets=sheets_tabs,
+        expected_sheets=expected_sheets_tabs,
     )
 
 
-def valid_frequency_expected_values(sheet_name):
-    if sheet_name == "Data_|_T=_autre":
-        return True
-
-
-def check_frequency(dossier, file, sheet_name, frequencies):
+def check_frequencies(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    sheet_name: str,
+    frequencies: List[str],
+):
     if len(set(frequencies)) != 1:
         raise SeveralFrequencyInTheSameSheetError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
             sheet_name=sheet_name,
             frequencies=frequencies,
         )
@@ -80,8 +91,8 @@ def check_frequency(dossier, file, sheet_name, frequencies):
     if frequency not in STANDARD_V2_SHEETS_FREQUENCIES[sheet_name]:
         raise StandardFileParametersBadValueError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
             sheet_name=sheet_name,
             parameter_name="frequence",
             incorrect_value=frequency,
@@ -89,29 +100,26 @@ def check_frequency(dossier, file, sheet_name, frequencies):
         )
 
 
-def check_validate_date_format(dossier, file, dates, sheet_name=None):
-    for date in dates:
-        if (not pd.isna(date)) or (not isinstance(date, dt.datetime)):
-            raise DateColumnContainsInvalidValuesError(
-                email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
-                sheet_name=sheet_name,
-            )
-
-
-def check_values_are_positives(dossier, file, values, sheet_name=None):
+def check_values_are_positives(
+    dossier: Dossier, file: PieceJointeSerializer, values: np.array, sheet_name=None
+):
     if np.any(values < 0):
         raise ValuesAreNotPositiveError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
             sheet_name=sheet_name,
         )
 
 
 def check_value_present_per_row(
-    dossier, file, tableur, sheet_name=None, remarques=None, start_row=3, start_column=1
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    tableur: np.array,
+    start_row: int = 3,
+    start_column: int = 1,
+    sheet_name: Optional[str] = None,
+    remarques: Optional[str] = None,
 ):
     for row_id in range(len(tableur[start_row:, start_column:])):
         row = tableur[start_row:, start_column:][row_id]
@@ -120,34 +128,34 @@ def check_value_present_per_row(
             if remarques is not None and pd.isna(remarques[row_id]):
                 raise AtLeastOneValueShouldBeProvidedByRowError(
                     email=dossier.adresse_email_declarant,
-                    id_dossier=dossier.id_dossier,
-                    file_name=file.nom_fichier,
+                    id_dossier=dossier.id,
+                    file_name=file.filename,
                     row=start_row + 1 + row_id,
                     sheet_name=sheet_name,
                 )
             elif remarques is None:
                 raise AtLeastOneValueShouldBeProvidedByRowError(
                     email=dossier.adresse_email_declarant,
-                    id_dossier=dossier.id_dossier,
-                    file_name=file.nom_fichier,
+                    id_dossier=dossier.id,
+                    file_name=file.filename,
                     row=start_row + 1 + row_id,
                 )
 
 
-def check_date_is_not_missing(dossier, file, dates):
+def check_date_is_not_missing(dossier: Dossier, file: PieceJointeSerializer, dates):
     for row_id in range(len(dates)):
         if pd.isna(dates[row_id]):
             raise MissingDateError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 row=4 + row_id,
             )
         if not isinstance(dates[row_id], dt.datetime):
             raise DateFormatError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 row=4 + row_id,
                 current_value=dates[row_id],
             )
@@ -159,37 +167,19 @@ def check_parameter_is_not_provided(parameter):
     )
 
 
-def check_parameters_present(
-    dossier,
-    file,
-    parameter_name,
-    parameter_type,
-    parameter_frequency,
-    parameter_unit,
-    parameter_start_date,
-    parameter_end_date,
+def check_value_in_list(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    name,
+    value,
+    expected_values,
+    sheet_name=None,
 ):
-    if (
-        check_parameter_is_not_provided(parameter_name)
-        or check_parameter_is_not_provided(parameter_type)
-        or check_parameter_is_not_provided(parameter_frequency)
-        or check_parameter_is_not_provided(parameter_unit)
-        or check_parameter_is_not_provided(parameter_start_date)
-        or check_parameter_is_not_provided(parameter_end_date)
-    ):
-        raise StandardFileParametersIsMissingError(
-            email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
-        )
-
-
-def check_value_in_list(dossier, file, name, value, expected_values, sheet_name=None):
     if isinstance(value, float) and np.isnan(value):
         raise ParameterIsMissingError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
             sheet_name=sheet_name,
             parameter_name=name,
             expected_values=expected_values,
@@ -197,8 +187,8 @@ def check_value_in_list(dossier, file, name, value, expected_values, sheet_name=
     if value not in expected_values:
         raise StandardFileParametersBadValueError(
             email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id_dossier,
-            file_name=file.nom_fichier,
+            id_dossier=dossier.id,
+            file_name=file.filename,
             sheet_name=sheet_name,
             parameter_name=name,
             incorrect_value=value,
@@ -206,20 +196,33 @@ def check_value_in_list(dossier, file, name, value, expected_values, sheet_name=
         )
 
 
-def check_values_in_list(dossier, file, name, values, expected_values, sheet_name=None):
+def check_values_in_list(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    name,
+    values,
+    expected_values,
+    sheet_name=None,
+):
     for value in values:
         check_value_in_list(dossier, file, name, value, expected_values, sheet_name)
 
 
-def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet_name):
+def check_start_dates_and_end_dates(
+    dossier,
+    file: PieceJointeSerializer,
+    start_dates: List,
+    end_dates: List,
+    sheet_name: str,
+):
     for start_date, end_date in zip(start_dates, end_dates):
         if (isinstance(start_date, float) and pd.isna(start_date)) or not isinstance(
             start_date, dt.datetime
         ):
             raise ParameterIsMissingError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 parameter_name="date_debut",
                 expected_values="une date au format aaaa-mm-jj",
@@ -229,8 +232,8 @@ def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet
         ):
             raise ParameterIsMissingError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 parameter_name="end_debut",
                 expected_values="une date au format aaaa-mm-jj",
@@ -238,8 +241,8 @@ def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet
         if not isinstance(start_date, dt.datetime):
             raise StandardFileParametersBadValueError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 parameter_name="date_debut",
                 incorrect_value=start_date,
@@ -248,8 +251,8 @@ def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet
         if not isinstance(end_date, dt.datetime):
             raise StandardFileParametersBadValueError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 parameter_name="date_fin",
                 incorrect_value=end_date,
@@ -258,8 +261,8 @@ def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet
         if start_date > end_date:
             raise StartDateGreaterThanEndDateError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 start_date=start_date,
                 end_date=end_date,
@@ -267,7 +270,12 @@ def check_start_dates_and_end_dates(dossier, file, start_dates, end_dates, sheet
 
 
 def check_datetimes_are_included_in_start_dates_end_dates(
-    dossier, file, start_dates, end_dates, datetimes, sheet_name
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    start_dates: List,
+    end_dates: List,
+    datetimes: List,
+    sheet_name: str,
 ):
     for start_date, end_date in zip(start_dates, end_dates):
         current_datetimes = [
@@ -278,8 +286,8 @@ def check_datetimes_are_included_in_start_dates_end_dates(
         if current_datetimes:
             raise DatesValuesAreNotIncludedInDateRangeError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 start_date=start_date,
                 end_date=end_date,
@@ -287,27 +295,34 @@ def check_datetimes_are_included_in_start_dates_end_dates(
             )
 
 
-def check_datetimes_are_not_null(dossier, file, datetimes, sheet_name):
+def check_datetimes_are_not_null(
+    dossier: Dossier,
+    file: PieceJointeSerializer,
+    datetimes: List[dt.datetime],
+    sheet_name: str,
+):
     for i in range(len(datetimes)):
         if isinstance(datetimes[i], float) and np.isnan(datetimes[i]):
             raise MissingDateError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 row=13 + i,
                 sheet_name=sheet_name,
             )
 
 
-def check_profondeurs(dossier, file, depths, sheet_name):
+def check_profondeurs(
+    dossier: Dossier, file: PieceJointeSerializer, depths: List[float], sheet_name: str
+):
     for depth in depths:
         if isinstance(depth, float) and np.isnan(depth):
             continue
         if depth < 0:
             raise ProfondeurNegatveError(
                 email=dossier.adresse_email_declarant,
-                id_dossier=dossier.id_dossier,
-                file_name=file.nom_fichier,
+                id_dossier=dossier.id,
+                file_name=file.filename,
                 sheet_name=sheet_name,
                 profondeur=depth,
             )

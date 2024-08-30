@@ -27,3 +27,8 @@ def dataframe_to_sqlalchemy_objects(df, model):
         obj = model(**row.to_dict())
         objects.append(obj)
     return objects
+
+
+def open_file(path: str) -> str:
+    with open(path) as f:
+        return f.read()

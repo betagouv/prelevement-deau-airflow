@@ -3,16 +3,12 @@ import datetime
 from airflow import DAG
 
 from utils.core.settings import settings
-from utils.demarchessimplifiees.data_extractions.tasks import CollectDemarcheOperator
-from utils.demarchessimplifiees.last_snapshot.tasks import StoreLastSnapshotData
-from utils.demarchessimplifiees.merged_to_historical_db.tasks import (
-    MergeLastSnapshotOperator,
-)
+from utils.demarchessimplifiees.data_extraction.tasks import CollectDemarcheOperator
 from utils.demarchessimplifiees.standard_files_extractions.tasks import (
+    ChangementEtatValeurParValeurEtAutreType,
     CollectCiterneData,
-    CollectPrelevementData,
+    CollectPrelevementAEPZREData,
 )
-from utils.donnees_historiques.tasks import MergeHistoricalDBOperator
 
 with DAG(
     dag_id="dag_collect_demarche_prelevement_deau",
@@ -24,20 +20,16 @@ with DAG(
         task_id="CollectDemarche", demarche_number=settings.DEMARCHE_ID
     )
 
-    connect_citerne_data = CollectCiterneData(task_id="CollectCiterneData")
-    connect_prelevement_data = CollectPrelevementData(task_id="CollectPrelevementData")
-    store_last_snapshot_data = StoreLastSnapshotData(task_id="StoreLastSnapshotData")
-    merged_last_snapshot = MergeLastSnapshotOperator(
-        task_id="MergeLastSnapshotOperator"
+    collect_citerne_data = CollectCiterneData(task_id="CollectCiterneData")
+    collect_prelevement_aep_zre = CollectPrelevementAEPZREData(
+        task_id="CollectPrelevementAEPZREData"
     )
-    merged_historical_db = MergeHistoricalDBOperator(
-        task_id="MergeHistoricalDBOperator"
+    changement_etat_valeur_par_valeur_et_autre_type = (
+        ChangementEtatValeurParValeurEtAutreType(
+            task_id="ChangementEtatValeurParValeurEtAutreType"
+        )
     )
 
-    collect_demarches_simplifiees >> connect_citerne_data
-    collect_demarches_simplifiees >> connect_prelevement_data
-    connect_citerne_data >> store_last_snapshot_data
-    connect_prelevement_data >> store_last_snapshot_data
-
-    store_last_snapshot_data >> merged_last_snapshot
-    merged_last_snapshot >> merged_historical_db
+    collect_demarches_simplifiees >> collect_prelevement_aep_zre
+    collect_demarches_simplifiees >> collect_citerne_data
+    collect_demarches_simplifiees >> changement_etat_valeur_par_valeur_et_autre_type

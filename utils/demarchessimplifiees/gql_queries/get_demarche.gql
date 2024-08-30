@@ -20,20 +20,20 @@ query getDemarche(
     $deletedBefore: String
     $deletedAfter: String
     $deletedSince: ISO8601DateTime
-    $includeGroupeInstructeurs: Boolean = false
+    $includeGroupeInstructeurs: Boolean = true
     $includeDossiers: Boolean = false
     $includePendingDeletedDossiers: Boolean = false
     $includeDeletedDossiers: Boolean = false
-    $includeRevision: Boolean = false
-    $includeService: Boolean = false
+    $includeRevision: Boolean = true
+    $includeService: Boolean = true
     $includeChamps: Boolean = true
     $includeAnotations: Boolean = true
     $includeTraitements: Boolean = true
     $includeInstructeurs: Boolean = true
     $includeAvis: Boolean = false
     $includeMessages: Boolean = false
-    $includeCorrections: Boolean = false
-    $includeGeometry: Boolean = false
+    $includeCorrections: Boolean = true
+    $includeGeometry: Boolean = true
 ) {
     demarche(number: $demarcheNumber) {
         id
