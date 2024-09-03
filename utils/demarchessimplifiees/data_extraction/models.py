@@ -249,6 +249,11 @@ class Dossier(Base):
         String,
         comment="Avez-vous une idée ce que qui pourrait être amélioré pour réduire ce temps ?",
     )
+    #  Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?
+    temps_formatage_donnees = Column(
+        String,
+        comment="Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?",
+    )
     # Qui est la personne qui a fait la déclaration sur Démarches Simplifiées ? :
     declarant_demarche_simplifiee = Column(
         String,
@@ -258,6 +263,10 @@ class Dossier(Base):
     televerseur_tableur_brutes = Column(
         String,
         comment="Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ?",
+    )
+    # Comment cette personne a-t-elle eu accès au formulaire ?
+    acces_formulaire = Column(
+        String, comment="Comment cette personne a-t-elle eu accès au formulaire ?"
     )
     # Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?
     raison_non_declaration_preleveur = Column(
@@ -281,7 +290,7 @@ class Dossier(Base):
     )
     # Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données,
     # et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps. :
-    developpement_interface_visualisation = Column(
+    suggestion_informations_visualisation = Column(
         String,
         comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données, "
         + "et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
@@ -303,18 +312,6 @@ class Dossier(Base):
     )
     date_fin_periode_declaree = Column(
         DateTime, comment="Date de fin de la période concernée par la déclaration"
-    )
-    temps_formatage_donnees = Column(
-        String,
-        comment="Combien de temps avez-vous passé au formatage des données (utilisation du modèle de tableur imposé) ?",
-    )
-    acces_formulaire = Column(
-        String, comment="Comment cette personne a-t-elle eu accès au formulaire ?"
-    )
-    suggestion_informations_visualisation = Column(
-        String,
-        comment="Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données, "
-        + "et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps.",
     )
 
     messages = relationship(

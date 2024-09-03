@@ -453,6 +453,8 @@ class DossierSerializer(BaseModel):
     declarant_demarche_simplifiee: Optional[str] = None
     #  Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ? :
     televerseur_tableur_brutes: Optional[str] = None
+    # Comment cette personne a-t-elle eu accès au formulaire ?
+    acces_formulaire: Optional[str] = None
     # Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?
     raison_non_declaration_preleveur: Optional[str] = None
     # Souhaiteriez-vous recevoir le 1er de chaque mois un mail vous rappelant l'obligation mensuelle de déclaration ? :
@@ -463,7 +465,7 @@ class DossierSerializer(BaseModel):
     amelioration_documentation: Optional[str] = None
     # Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données,
     # et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps. :
-    developpement_interface_visualisation: Optional[str] = None
+    suggestion_informations_visualisation: Optional[str] = None
     # Accepteriez-vous d’être recontacté.e par la DEAL pour échanger davantage sur le sujet ? :
     acceptation_contact_deal: Optional[bool] = None
     # En cochant la présente case, je déclare que les informations que j'ai complété dans le questionnaire sont exactes :
@@ -472,8 +474,6 @@ class DossierSerializer(BaseModel):
     # Champs supprimés conservés pour compatibilité avec les anciennes versions
     date_debut_periode_declaree: Optional[datetime.datetime] = None
     date_fin_periode_declaree: Optional[datetime.datetime] = None
-    acces_formulaire: Optional[str] = None
-    suggestion_informations_visualisation: Optional[str] = None
 
     # Messages
     messages: List[MessageSerializer] = []
