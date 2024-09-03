@@ -717,9 +717,9 @@ def process_dossier(
         if "amelioration_documentation" in dict_id_to_champs
         else None
     )
-    data["developpement_interface_visualisation"] = (
-        dict_id_to_champs["developpement_interface_visualisation"].stringValue
-        if "developpement_interface_visualisation" in dict_id_to_champs
+    data["suggestion_informations_visualisation"] = (
+        dict_id_to_champs["suggestion_informations_visualisation"].stringValue
+        if "suggestion_informations_visualisation" in dict_id_to_champs
         else None
     )
     data["acceptation_contact_deal"] = (

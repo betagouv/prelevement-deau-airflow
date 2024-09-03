@@ -83,6 +83,8 @@ champs_to_labels = {
     "Champ-4272705": "declarant_demarche_simplifiee",
     #  Qui est la personne qui a téléversé le tableur de données brutes dans l’outil Démarches Simplifiées ? :
     "Champ-4272688": "televerseur_tableur_brutes",
+    # Comment cette personne a-t-elle eu accès au formulaire ?
+    "Champ-4272702": "acces_formulaire",
     # Pour quelles raisons la personne en charge du prélèvement n'a-t-elle pas pu faire la déclaration elle-même ?
     "Champ-4272709": "raison_non_declaration_preleveur",
     # Souhaiteriez-vous recevoir le 1er de chaque mois un mail vous rappelant l'obligation mensuelle de déclaration ? :
@@ -93,7 +95,8 @@ champs_to_labels = {
     "Champ-4272714": "amelioration_documentation",
     # Si vous le souhaitez, vous pouvez nous faire part des informations que vous aimeriez voir figurer dans cet outil de visualisation de données,
     # et qui pourraient vous être utiles pour mieux suivre vos prélèvements au fil du temps. :
-    "Champ-4272720": "developpement_interface_visualisation",
+    "Champ-4272720": "suggestion_informations_visualisation",
+    "Champ-4272723": "suggestion_informations_visualisation",
     # Accepteriez-vous d’être recontacté.e par la DEAL pour échanger davantage sur le sujet ? :
     "Champ-4272724": "acceptation_contact_deal",
     # En cochant la présente case, je déclare que les informations que j'ai complété dans le questionnaire sont exactes :
@@ -105,7 +108,6 @@ champs_to_labels = {
     "Champ-3988564": "copie_registre_papier",
     "Champ-3915100": "extrait_registre",
     "Champ-3888489": "prelevement_citerne",
-    "Champ-4272723": "suggestion_informations_visualisation",
     "Champ-2379084": "conclusion",
     "Champ-3888515": "volumes_annuels_pompes",
     "Champ-3988562": "transmission_extrait_numerique_registre",
@@ -116,7 +118,6 @@ champs_to_labels = {
     "Champ-3914811": "prelevement_icpe",
     "Champ-3642781": "donnees_standardisees",
     "Champ-3888611": "prelevement_aep_zre",
-    "Champ-4272702": "acces_formulaire",
     "Champ-3988441": "date_debut_periode_declaree",
     "Champ-3988442": "date_fin_periode_declaree",
     "Champ-4017191": "nom_point_prelevement",
