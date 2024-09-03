@@ -8,7 +8,9 @@ from utils.core.settings import settings
 from utils.demarchessimplifiees.common.schemas import CorrectionReasonEnum
 
 
-def request_demarches_simplifiees(file_path: str, body: dict):
+def request_demarches_simplifiees(
+    file_path: str, body: dict, token: str = settings.DEMARCHES_SIMPLIFIEES_TOKEN
+) -> dict:
     query = open_file(
         path=os.path.join(
             os.getenv("AIRFLOW_HOME"),
@@ -20,7 +22,7 @@ def request_demarches_simplifiees(file_path: str, body: dict):
         url=settings.DEMARCHES_SIMPLIFIEES_URL,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {settings.DEMARCHES_SIMPLIFIEES_TOKEN}",
+            "Authorization": f"Bearer {token}",
         },
         json=body,
     )
@@ -33,6 +35,7 @@ def dossier_envoyer_message(
     instructeur_id: str,
     body: str,
     correction: CorrectionReasonEnum = None,
+    token: str = None,
 ) -> dict:
     return request_demarches_simplifiees(
         file_path="utils/demarchessimplifiees/gql_queries/dossier_envoyer_message.gql",
@@ -47,6 +50,7 @@ def dossier_envoyer_message(
             },
             "operationName": "dossierEnvoyerMessage",
         },
+        token=token,
     )
 
 
