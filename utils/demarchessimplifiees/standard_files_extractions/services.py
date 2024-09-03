@@ -70,12 +70,27 @@ logging = get_logger(__name__)
 
 
 def send_error_mail(dossier: Dossier, message: str, session):
-    if (not settings.DRY_RUN) and (settings.DEMARCHE_ID != 80149):
+    # TODO: Remove DEMARCHE_ID == 80149 FOR PRODUCTION
+    if not settings.DRY_RUN or settings.DEMARCHE_ID == 80149:
+
+        destination_dossier_id = encode64(f"Dossier-{dossier.id}")
+        destination_dossier_token = settings.DEMARCHES_SIMPLIFIEES_TOKEN
+
+        # TODO: Remove FOR PRODUCTION
+        if settings.DEMARCHE_ID == 80149:
+            destination_dossier_id = encode64(
+                f"Dossier-{settings.TMP_ERROR_MESSAGE_RECEPTION_DOSSIER_ID}"
+            )
+            destination_dossier_token = (
+                settings.TMP_ERROR_MESSAGE_RECEPTION_DEMARCHE_TOKEN
+            )
+
         dossier_envoyer_message_result = dossier_envoyer_message(
-            dossier_id=encode64(f"Dossier-{dossier.id}"),
+            dossier_id=destination_dossier_id,
             instructeur_id=settings.INSTRUCTEUR_ID,
             body=message,
-            correction=CorrectionReasonEnum.incorrect,
+            correction=CorrectionReasonEnum.incorrect if not settings.DRY_RUN else None,
+            token=destination_dossier_token,
         )
         if dossier_envoyer_message_result["data"]["dossierEnvoyerMessage"]["errors"]:
             dossier_envoyer_message_result_errors = ". ".join(
@@ -407,6 +422,7 @@ def process_aep_or_zre_file(
 
 
 def accepte_dossier_if_not_accepted(dossier: Dossier):
+    # TODO: Remove FOR PRODUCTION
     if (
         (DossierEtatEnum(dossier.etat_dossier) == DossierEtatEnum.EN_INSTRUCTION)
         and (not settings.DRY_RUN)

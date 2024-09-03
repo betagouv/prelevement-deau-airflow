@@ -21,6 +21,8 @@ class Settings(BaseSettings, case_sensitive=True):
     SCW_S3_BUCKET: str
     SCW_S3_PUBLIC_BUCKET: str
     DRY_RUN: bool
+    TMP_ERROR_MESSAGE_RECEPTION_DOSSIER_ID: str
+    TMP_ERROR_MESSAGE_RECEPTION_DEMARCHE_TOKEN: str
 
 
 settings = Settings()

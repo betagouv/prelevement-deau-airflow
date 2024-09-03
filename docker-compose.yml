@@ -78,6 +78,9 @@ x-airflow-common:
     SCW_S3_PUBLIC_BUCKET: ${SCW_S3_PUBLIC_BUCKET:-}
     DRY_RUN: ${DRY_RUN:-}
 
+    TMP_ERROR_MESSAGE_RECEPTION_DOSSIER_ID: ${TMP_ERROR_MESSAGE_RECEPTION_DOSSIER_ID:-}
+    TMP_ERROR_MESSAGE_RECEPTION_DEMARCHE_TOKEN: ${TMP_ERROR_MESSAGE_RECEPTION_DEMARCHE_TOKEN:-}
+
     PYTHONPATH: /opt/airflow
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
