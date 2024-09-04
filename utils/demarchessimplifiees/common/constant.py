@@ -42,6 +42,8 @@ champs_to_labels = {
     # Autre prélèvement (agricole, domestique...)
     # Nom du point de prélèvement concerné par la déclaration :
     "Champ-2378771": "nom_point_prelevement",
+    "Champ-4017191": "nom_point_prelevement",
+    "Champ-2378853": "nom_point_prelevement",
     #  Depuis quand ce point de prélèvement est-il en activité ? :
     "Champ-3642779": "date_activation_point_prelevement",
     # Sur la période concernée par votre déclaration (mois précédent), avez-vous prélevé sur le point de prélèvement autorisé par votre AOT ? :
@@ -49,6 +51,7 @@ champs_to_labels = {
     # Relever Index
     "Champ-3888549": "releve_index_tmp",
     # Informations sur le compteur
+    "Champ-3643897": "informations_compteur",
     # Certaines de vos données sont-elles issues d'un compteur volumétrique ? :
     "Champ-3660667": "donnees_compteur_volumetrique",
     # Souhaitez-vous signaler une panne ou un changement de compteur ? :
@@ -101,29 +104,45 @@ champs_to_labels = {
     "Champ-4272724": "acceptation_contact_deal",
     # En cochant la présente case, je déclare que les informations que j'ai complété dans le questionnaire sont exactes :
     "Champ-2379086": "validation_informations",
+    # Champs supprimés mais conservés
+    # Date du début de la période concernée par la déclaration
+    "Champ-3988441": "date_debut_periode_declaree",
+    # Date de fin de la période concernée par la déclaration
+    "Champ-3988442": "date_fin_periode_declaree",
     # Champs supprimés
+    # Vos coordonnées
     "Champ-3642770": "coordonnees",
+    # Remontée des volumes prélevés
     "Champ-3988566": "volume_preleve",
     # "Champ-3888513": "volumes_pompes_jour", => renommé en "prelevement_citerne_valeur_par_valeur_tmp"
+    # Copie du registre papier
     "Champ-3988564": "copie_registre_papier",
+    # Extrait de registre
     "Champ-3915100": "extrait_registre",
+    # Prélèvement par camion citerne
     "Champ-3888489": "prelevement_citerne",
+    # Pour finir
     "Champ-2379084": "conclusion",
+    # Dans cette partie, vous allez pouvoir renseigner les volumes annuels pompés sur chaque point de prélèvement
     "Champ-3888515": "volumes_annuels_pompes",
+    # Dans cette partie, vous allez pouvoir renseigner les volumes pompés en transmettant un extrait numérique de votre registre
     "Champ-3988562": "transmission_extrait_numerique_registre",
+    # Une déclaration doit être faite par point de prélèvement d'eau
     "Champ-3660491": "declaration_point_prelevement",
+    # Autre prélèvement (agricole, domestique...)
     "Champ-3888528": "type_autre_prelevement",
+    # Dans cette partie, vous allez pouvoir renseigner les index lus sur votre compteur à différentes dates
     "Champ-3888529": "releve_index_compteur",
-    "Champ-3643897": "informations_compteur",
+    # Prélèvement ICPE (hors ZRE)
     "Champ-3914811": "prelevement_icpe",
     "Champ-3642781": "donnees_standardisees",
+    # Prélèvement AEP ou en ZRE
     "Champ-3888611": "prelevement_aep_zre",
-    "Champ-3988441": "date_debut_periode_declaree",
-    "Champ-3988442": "date_fin_periode_declaree",
-    "Champ-4017191": "nom_point_prelevement",
-    "Champ-2378853": "nom_point_prelevement",
+    # Remarques sur les données transmises
     "Champ-4272678": "remarques_donnees_transmises",
+    # Retour sur l'utilisation du formulaire
     "Champ-4272680": "retour_utilisation_formulaire",
+    # Ce formulaire  permet à l’administration de collecter les données de suivi des prélèvements d'eau
     "Champ-4272681": "objectif_collecte_donnees",
     # Avez-vous déjà renseigné les éléments relatifs à votre compteur lors d'une précédente déclaration (numéro de série et type de compteur) ?
     "Champ-4317248": "compteur_renseigne_precedente_declaration",

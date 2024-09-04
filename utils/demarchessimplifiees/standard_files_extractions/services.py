@@ -92,16 +92,11 @@ def send_error_mail(dossier: Dossier, message: str, session):
             correction=CorrectionReasonEnum.incorrect if not settings.DRY_RUN else None,
             token=destination_dossier_token,
         )
-        if dossier_envoyer_message_result["data"]["dossierEnvoyerMessage"]["errors"]:
-            dossier_envoyer_message_result_errors = ". ".join(
-                [
-                    f"{error['message']}"
-                    for error in dossier_envoyer_message_result["data"][
-                        "dossierEnvoyerMessage"
-                    ]["errors"]
-                ]
+        if "errors" in dossier_envoyer_message_result:
+            logging.error(
+                f"[{dossier.id}] {dossier_envoyer_message_result['errors'][0]['message']}"
             )
-            logging.error(f"[{dossier.id}] {dossier_envoyer_message_result_errors}")
+
     error_mail = ErrorMail(
         email=dossier.adresse_email_declarant,
         id_dossier=dossier.id,
