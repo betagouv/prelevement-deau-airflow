@@ -732,7 +732,16 @@ def process_dossier(
         if "validation_informations" in dict_id_to_champs
         else None
     )
-
+    data["date_fin_periode_declaree"] = (
+        dict_id_to_champs["date_fin_periode_declaree"].checked
+        if "date_fin_periode_declaree" in dict_id_to_champs
+        else None
+    )
+    data["date_debut_periode_declaree"] = (
+        dict_id_to_champs["date_debut_periode_declaree"].checked
+        if "date_debut_periode_declaree" in dict_id_to_champs
+        else None
+    )
     # Messages
     data["messages"] = [
         process_message(current_dossier.number, message)
