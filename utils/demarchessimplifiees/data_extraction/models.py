@@ -128,6 +128,31 @@ class Dossier(Base):
         Boolean,
         comment="Pour les AOT de camions citernes, indique si des prélèvements ont été réalisés sur la période concernée par la déclaration (mois précédent)",
     )
+    #  Votre déclaration concerne-t-elle plusieurs mois (ATTENTION : seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois) ? : Modifié le 10/09 08:52
+    declaration_plusieurs_mois_camion_citerne = Column(
+        Boolean,
+        comment="Indique si la déclaration concerne plusieurs mois (seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois)",
+    )
+    # Mois de début de déclaration
+    mois_debut_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de début de déclaration pour les AOT de camions citernes",
+    )
+    # Mois de fin de déclaration
+    mois_fin_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de fin de déclaration pour les AOT de camions citernes",
+    )
+    # Mois de déclaration
+    mois_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de déclaration pour les AOT de camions citernes",
+    )
+    # Dans cette partie, vous allez pouvoir renseigner les volumes pompés en transmettant un tableau de suivi
+    volumes_pompes_tableau_suivi_camion_citerne = Column(
+        Boolean,
+        comment="Indique si les volumes pompés sont renseignés dans un tableau de suivi pour les AOT de camions citernes",
+    )
     # Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?
     prelevement_points_autorises_aot_2023 = Column(
         Boolean,
@@ -355,6 +380,9 @@ class DonneesPointDePrelevementAPEZRE(Base):
     __tablename__ = "donnees_point_de_prelevement_aep_zre"
     id = Column(Integer, primary_key=True, comment="Identifiant unique du prélèvement")
     nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
+    prelevement_realise = Column(
+        Boolean, comment="Indique si un prélèvement a été réalisé"
+    )
     ligne = Column(
         Integer,
         comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",

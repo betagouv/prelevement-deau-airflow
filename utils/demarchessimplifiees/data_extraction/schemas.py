@@ -280,6 +280,7 @@ class PrelevementCiterneValeurParValeurSerializer(BaseModel):
 class PrelevementAPEZRESerializer(BaseModel):
     ligne: int
     nom_point_prelevement: str
+    prelevement_realise: bool
     fichier_prelevement_filename: str
     fichier_prelevement_url: str
     fichier_prelevement_object_storage: str
@@ -388,6 +389,16 @@ class DossierSerializer(BaseModel):
     # Prélèvement par camion citerne
     # Sur la période concernée par votre déclaration, avez-vous prélevé sur au moins un des points autorisés par votre AOT ? :
     prelevement_sur_periode_camion_citerne: Optional[bool] = None
+    #  Votre déclaration concerne-t-elle plusieurs mois (ATTENTION : seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois) ? : Modifié le 10/09 08:52
+    declaration_plusieurs_mois_camion_citerne: Optional[bool] = None
+    # Mois de début de déclaration
+    mois_debut_declaration_camion_citerne: Optional[str] = None
+    # Mois de fin de déclaration
+    mois_fin_declaration_camion_citerne: Optional[str] = None
+    # Mois de déclaration
+    mois_declaration_camion_citerne: Optional[str] = None
+    # Dans cette partie, vous allez pouvoir renseigner les volumes pompés en transmettant un tableau de suivi
+    volumes_pompes_tableau_suivi_camion_citerne: Optional[str] = None
     # Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?
     prelevement_points_autorises_aot_2023: Optional[bool] = None
     # Comment souhaitez-vous transmettre vos données ? :

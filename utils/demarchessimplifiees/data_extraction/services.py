@@ -192,28 +192,30 @@ def get_prelevement_citerne_valeur_par_valeur(champ: RepetitionChamp):
     result = []
 
     for row in champ.rows:
-        result.append(
-            {
-                "nom_point_prelevement": row.champs[0].stringValue,
-                "date": row.champs[1].date,
-                "valeur": row.champs[2].decimalNumber,
-            }
-        )
-    return result
-
-
-def get_prelevement_citerne_volume_pompe(champ: RepetitionChamp):
-    result = []
-
-    for row in champ.rows:
-        result.append(
-            {
-                "nom_point_prelevement": row.champs[0].stringValue,
-                "annee": row.champs[1].integerNumber,
-                "valeur": row.champs[2].decimalNumber,
-            }
-        )
-
+        if len(row.champs) == 2:
+            result.append(
+                {
+                    "nom_point_prelevement": row.champs[0].stringValue,
+                    "valeur": row.champs[1].decimalNumber,
+                }
+            )
+        else:
+            if row.champs[1].champType == ChampType.DATE:
+                result.append(
+                    {
+                        "nom_point_prelevement": row.champs[0].stringValue,
+                        "date": row.champs[1].date,
+                        "valeur": row.champs[2].decimalNumber,
+                    }
+                )
+            else:
+                result.append(
+                    {
+                        "nom_point_prelevement": row.champs[0].stringValue,
+                        "annee": row.champs[1].integerNumber,
+                        "valeur": row.champs[2].decimalNumber,
+                    }
+                )
     return result
 
 
@@ -221,9 +223,24 @@ def process_prelevement_zre_or_icpe(dossier_id: int, champ: RepetitionChamp):
     result = []
 
     for row_id in range(len(champ.rows)):
+
         row = champ.rows[row_id]
 
-        ficher_prelevement = row.champs[1].files[0]
+        ficher_prelevement_id = 1
+        autre_document_id = 2
+        if row.champs[1].champType == ChampType.CHECKBOX:
+            ficher_prelevement_id = 2
+            autre_document_id = 3
+
+            if not row.champs[1].checked:
+                row_result = {
+                    "nom_point_prelevement": row.champs[0].stringValue,
+                    "ligne": row_id + 1,
+                    "prelevement_realise": False,
+                }
+                result.append(row_result)
+                continue
+        ficher_prelevement = row.champs[ficher_prelevement_id].files[0]
 
         fichier_object_storage = f"demarches_simplifiees/dossiers/{dossier_id}/prelevement_aep_zre/{row_id}/fichier_prelevement_{ficher_prelevement.filename}"
         response = requests.get(ficher_prelevement.url)
@@ -236,14 +253,15 @@ def process_prelevement_zre_or_icpe(dossier_id: int, champ: RepetitionChamp):
 
         row_result = {
             "nom_point_prelevement": row.champs[0].stringValue,
+            "prelevement_realise": True,
             "fichier_prelevement_filename": ficher_prelevement.filename,
             "fichier_prelevement_url": ficher_prelevement.url,
             "fichier_prelevement_object_storage": fichier_object_storage,
             "ligne": row_id + 1,
         }
 
-        if row.champs[2].files:
-            autre_document = row.champs[2].files[0]
+        if row.champs[autre_document_id].files:
+            autre_document = row.champs[autre_document_id].files[0]
 
             autre_document_object_storage = f"demarches_simplifiees/dossiers/{dossier_id}/prelevement_aep_zre/{row_id}/autre_document_{autre_document.filename}"
             response = requests.get(autre_document.url)
@@ -329,6 +347,7 @@ def process_avis(dossier_id: int, avis: InputAvisSerializer):
 def process_dossier(
     current_dossier: InputDossierSerializer,
 ) -> DossierSerializer:
+    print(current_dossier.number)
     data = {}
     dict_id_to_champs = {}
     for champ in current_dossier.champs:
@@ -357,69 +376,27 @@ def process_dossier(
         == TypePrelevementEnum.PRELEVEMENT_CAMION_CITERNE
     ):
 
-        # VOLUME POMPE
-        if (
-            dict_id_to_champs["annee_prelevement_camion_citerne"].stringValue == "2023"
-            and "prelevement_points_autorises_aot_2023" in dict_id_to_champs
-            and dict_id_to_champs["prelevement_points_autorises_aot_2023"].checked
-            and dict_id_to_champs["details_prelevements_camion_citerne"].checked
-            is False
-        ):
+        if "prelevement_citerne_valeur_par_valeur_tmp" in dict_id_to_champs:
             dict_id_to_champs["prelevement_citerne_valeur_par_valeur"] = (
-                get_prelevement_citerne_volume_pompe(
+                get_prelevement_citerne_valeur_par_valeur(
                     dict_id_to_champs["prelevement_citerne_valeur_par_valeur_tmp"]
                 )
             )
-        else:
-            is_preleve_sur_points_autorises_2023 = (
-                "prelevement_points_autorises_aot_2023" in dict_id_to_champs
-                and dict_id_to_champs["prelevement_points_autorises_aot_2023"].checked
-            )
-            is_preleve_sur_points_autorises_2024 = (
-                "prelevement_sur_periode_camion_citerne" in dict_id_to_champs
-                and dict_id_to_champs["prelevement_sur_periode_camion_citerne"].checked
-            )
 
-            if (
-                is_preleve_sur_points_autorises_2023
-                or is_preleve_sur_points_autorises_2024
-            ):
-                if (
-                    TypeTransmissionDonneesEnum(
-                        dict_id_to_champs[
-                            "mode_transmission_donnees_camion_citerne"
-                        ].stringValue
-                    )
-                    == TypeTransmissionDonneesEnum.TABLEAU_SUIVI
-                ):
-                    processed_file = process_prelevement_citerne_file(
-                        current_dossier.number,
-                        dict_id_to_champs["fichier_tableau_suivi_camion_citerne"],
-                    )
-                    dict_id_to_champs[
-                        "fichier_tableau_suivi_camion_citerne_filename"
-                    ] = processed_file["filename"]
-                    dict_id_to_champs["fichier_tableau_suivi_camion_citerne_url"] = (
-                        processed_file["url"]
-                    )
-                    dict_id_to_champs[
-                        "fichier_tableau_suivi_camion_citerne_object_storage"
-                    ] = processed_file["object_storage"]
-                elif (
-                    TypeTransmissionDonneesEnum(
-                        dict_id_to_champs[
-                            "mode_transmission_donnees_camion_citerne"
-                        ].stringValue
-                    )
-                    == TypeTransmissionDonneesEnum.VALEUR_PAR_VALEUR
-                ):
-                    dict_id_to_champs["prelevement_citerne_valeur_par_valeur"] = (
-                        get_prelevement_citerne_valeur_par_valeur(
-                            dict_id_to_champs[
-                                "prelevement_citerne_valeur_par_valeur_tmp"
-                            ]
-                        )
-                    )
+        if "fichier_tableau_suivi_camion_citerne" in dict_id_to_champs:
+            processed_file = process_prelevement_citerne_file(
+                current_dossier.number,
+                dict_id_to_champs["fichier_tableau_suivi_camion_citerne"],
+            )
+            dict_id_to_champs["fichier_tableau_suivi_camion_citerne_filename"] = (
+                processed_file["filename"]
+            )
+            dict_id_to_champs["fichier_tableau_suivi_camion_citerne_url"] = (
+                processed_file["url"]
+            )
+            dict_id_to_champs["fichier_tableau_suivi_camion_citerne_object_storage"] = (
+                processed_file["object_storage"]
+            )
     # AEP ou ZRE
     elif (
         TypePrelevementEnum(dict_id_to_champs["type_prelevement"].stringValue)
@@ -539,12 +516,38 @@ def process_dossier(
         TypePrelevementEnum(data["type_prelevement"])
         == TypePrelevementEnum.PRELEVEMENT_CAMION_CITERNE
     ):
-        data["annee_prelevement_camion_citerne"] = dict_id_to_champs[
-            "annee_prelevement_camion_citerne"
-        ].stringValue
+        data["annee_prelevement_camion_citerne"] = (
+            dict_id_to_champs["annee_prelevement_camion_citerne"].stringValue
+            if "annee_prelevement_camion_citerne" in dict_id_to_champs
+            else None
+        )
         data["mois_prelevement_camion_citerne"] = (
             dict_id_to_champs["mois_prelevement_camion_citerne"].stringValue
             if "mois_prelevement_camion_citerne" in dict_id_to_champs
+            else None
+        )
+
+        data["declaration_plusieurs_mois_camion_citerne"] = (
+            dict_id_to_champs["declaration_plusieurs_mois_camion_citerne"].checked
+            if "declaration_plusieurs_mois_camion_citerne" in dict_id_to_champs
+            else None
+        )
+
+        data["mois_debut_declaration_camion_citerne"] = (
+            dict_id_to_champs["mois_debut_declaration_camion_citerne"].stringValue
+            if "mois_debut_declaration_camion_citerne" in dict_id_to_champs
+            else None
+        )
+
+        data["mois_fin_declaration_camion_citerne"] = (
+            dict_id_to_champs["mois_fin_declaration_camion_citerne"].stringValue
+            if "mois_fin_declaration_camion_citerne" in dict_id_to_champs
+            else None
+        )
+
+        data["mois_declaration_camion_citerne"] = (
+            dict_id_to_champs["mois_declaration_camion_citerne"].stringValue
+            if "mois_declaration_camion_citerne" in dict_id_to_champs
             else None
         )
 
@@ -733,12 +736,12 @@ def process_dossier(
         else None
     )
     data["date_fin_periode_declaree"] = (
-        dict_id_to_champs["date_fin_periode_declaree"].checked
+        dict_id_to_champs["date_fin_periode_declaree"].date
         if "date_fin_periode_declaree" in dict_id_to_champs
         else None
     )
     data["date_debut_periode_declaree"] = (
-        dict_id_to_champs["date_debut_periode_declaree"].checked
+        dict_id_to_champs["date_debut_periode_declaree"].date
         if "date_debut_periode_declaree" in dict_id_to_champs
         else None
     )
@@ -767,7 +770,8 @@ def get_dossiers(dossiers: List[InputDossierSerializer]) -> List[DossierSerializ
             if new_dossier:
                 processed_dossiers.append(new_dossier)
         except Exception as e:
-            logging.error(f"Error processing dossier {dossiers[node_id].number}: {e}")
+            logging.error(f"Erreur lors du traitement du dossier {curr_node.number}")
+            raise e
     return processed_dossiers
 
 
