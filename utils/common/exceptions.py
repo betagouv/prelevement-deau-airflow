@@ -16,11 +16,11 @@ class FileError(Exception):
         return self.MESSAGE
 
     def get_message_to_send(self):
-        message = f"[{self.id_dossier}]"
+        message = ""
         if self.sheet_name:
-            message += f" problème sur l'onglet {self.sheet_name} du fichier '{self.file_name}'\n"
+            message += f" problème sur l'onglet '{self.sheet_name}' du fichier '{self.file_name}'. "
         else:
-            message += f" problème sur le fichier '{self.file_name}'.\n"
+            message += f" problème sur le fichier '{self.file_name}'. "
         message += self.get_error_message()
         return message
 

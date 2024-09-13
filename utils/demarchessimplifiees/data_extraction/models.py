@@ -22,7 +22,7 @@ from utils.demarchessimplifiees.data_extraction.schemas import (
 
 class Dossier(Base):
     __tablename__ = "dossier"
-
+    __table_args__ = {"schema": "prelevement_deau"}
     # ID
     id = Column(Integer, primary_key=True, comment="Identifiant unique du dossier.")
     # Archivé
@@ -127,6 +127,31 @@ class Dossier(Base):
     prelevement_sur_periode_camion_citerne = Column(
         Boolean,
         comment="Pour les AOT de camions citernes, indique si des prélèvements ont été réalisés sur la période concernée par la déclaration (mois précédent)",
+    )
+    #  Votre déclaration concerne-t-elle plusieurs mois (ATTENTION : seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois) ? : Modifié le 10/09 08:52
+    declaration_plusieurs_mois_camion_citerne = Column(
+        Boolean,
+        comment="Indique si la déclaration concerne plusieurs mois (seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois)",
+    )
+    # Mois de début de déclaration
+    mois_debut_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de début de déclaration pour les AOT de camions citernes",
+    )
+    # Mois de fin de déclaration
+    mois_fin_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de fin de déclaration pour les AOT de camions citernes",
+    )
+    # Mois de déclaration
+    mois_declaration_camion_citerne = Column(
+        String,
+        comment="Mois de déclaration pour les AOT de camions citernes",
+    )
+    # Dans cette partie, vous allez pouvoir renseigner les volumes pompés en transmettant un tableau de suivi
+    volumes_pompes_tableau_suivi_camion_citerne = Column(
+        Boolean,
+        comment="Indique si les volumes pompés sont renseignés dans un tableau de suivi pour les AOT de camions citernes",
     )
     # Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?
     prelevement_points_autorises_aot_2023 = Column(
@@ -329,6 +354,7 @@ class Dossier(Base):
 
 class PrelevementCiterneValeurParValeur(Base):
     __tablename__ = "prelevement_citerne_valeur_par_valeur"
+    __table_args__ = {"schema": "prelevement_deau"}
     # ID
     id = Column(Integer, primary_key=True, comment="Identifiant unique du prélèvement")
     # Date de prélèvement
@@ -343,7 +369,7 @@ class PrelevementCiterneValeurParValeur(Base):
     # Dossier 1-N
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
     dossier = relationship(
@@ -353,8 +379,13 @@ class PrelevementCiterneValeurParValeur(Base):
 
 class DonneesPointDePrelevementAPEZRE(Base):
     __tablename__ = "donnees_point_de_prelevement_aep_zre"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(Integer, primary_key=True, comment="Identifiant unique du prélèvement")
     nom_point_prelevement = Column(String, comment="Nom du point de prélèvement")
+    prelevement_realise = Column(
+        Boolean, comment="Indique si un prélèvement a été réalisé"
+    )
     ligne = Column(
         Integer,
         comment="Ordre dans lequel l’index a été déclaré pour une même déclaration",
@@ -375,7 +406,7 @@ class DonneesPointDePrelevementAPEZRE(Base):
     # Dossier 1-N
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
     dossier = relationship(
@@ -391,6 +422,8 @@ class DonneesPointDePrelevementAPEZRE(Base):
 
 class ReleverIndex(Base):
     __tablename__ = "relever_index"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(
         Integer, primary_key=True, comment="Identifiant unique du relevé d'index"
     )
@@ -398,7 +431,7 @@ class ReleverIndex(Base):
     valeur = Column(Float, comment="Index relevé")
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
     dossier = relationship("Dossier", back_populates="releve_index")
@@ -406,6 +439,8 @@ class ReleverIndex(Base):
 
 class Avis(Base):
     __tablename__ = "avis"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(Integer, primary_key=True, comment="Identifiant unique de l'avis")
     question = Column(String, comment="Question de l'avis")
     reponse = Column(String, comment="Réponse à la question de l'avis")
@@ -419,7 +454,7 @@ class Avis(Base):
 
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
     dossier = relationship("Dossier", back_populates="avis")
@@ -427,6 +462,8 @@ class Avis(Base):
 
 class Message(Base):
     __tablename__ = "message"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(Integer, primary_key=True, comment="Identifiant unique du message")
     date_creation = Column(DateTime, comment="Date du message")
     email = Column(String, comment="Email de l'expéditeur")
@@ -438,7 +475,7 @@ class Message(Base):
 
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
     dossier = relationship("Dossier", back_populates="messages")
@@ -446,6 +483,8 @@ class Message(Base):
 
 class MessagePieceJointe(Base):
     __tablename__ = "message_piece_jointe"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(
         Integer, primary_key=True, comment="Identifiant unique de la pièce jointe"
     )
@@ -454,7 +493,7 @@ class MessagePieceJointe(Base):
     object_storage = Column(String, comment="Nom du fichier dans l'object storage")
     id_message = Column(
         Integer,
-        ForeignKey("message.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.message.id", ondelete="CASCADE"),
         comment="Identifiant du message",
     )
     message = relationship("Message", back_populates="pieces_jointes")
@@ -462,6 +501,8 @@ class MessagePieceJointe(Base):
 
 class AvisPieceJointe(Base):
     __tablename__ = "avis_piece_jointe"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(
         Integer, primary_key=True, comment="Identifiant unique de la pièce jointe"
     )
@@ -470,7 +511,7 @@ class AvisPieceJointe(Base):
     object_storage = Column(String, comment="Nom du fichier dans l'object storage")
     id_avis = Column(
         Integer,
-        ForeignKey("avis.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.avis.id", ondelete="CASCADE"),
         comment="Identifiant de l'avis",
     )
     avis = relationship("Avis", back_populates="pieces_jointes")
@@ -478,13 +519,15 @@ class AvisPieceJointe(Base):
 
 class DonneesPrelevementCiterne(Base):
     __tablename__ = "donnees_prelevement_citerne"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     id = Column(Integer, primary_key=True, comment="Identifiant unique du prélèvement")
     date_releve = Column(DateTime, comment="Date du relevé")
     volume = Column(Float, comment="Volume prélevé")
     nom_point_prelevement = Column(String, comment="Point de prélèvement")
     id_dossier = Column(
         Integer,
-        ForeignKey("dossier.id", ondelete="CASCADE"),
+        ForeignKey("prelevement_deau.dossier.id", ondelete="CASCADE"),
         comment="Identifiant du dossier",
     )
 
@@ -493,6 +536,8 @@ class DonneesPrelevementCiterne(Base):
 
 class DonneesPrelevementAEPZRE(Base):
     __tablename__ = "donnees_prelevement_aep_zre"
+    __table_args__ = {"schema": "prelevement_deau"}
+
     date = Column(DateTime, comment="Date et Heure du relevé")
     valeur = Column(Float, comment="Valeur du relevé")
     nom_parametre = Column(String, comment="Nom du paramètre")
@@ -515,7 +560,10 @@ class DonneesPrelevementAEPZRE(Base):
 
     donnees_point_de_prelevement_aep_zre_id = Column(
         Integer,
-        ForeignKey("donnees_point_de_prelevement_aep_zre.id", ondelete="CASCADE"),
+        ForeignKey(
+            "prelevement_deau.donnees_point_de_prelevement_aep_zre.id",
+            ondelete="CASCADE",
+        ),
         comment="Identifiant du point de prélèvement",
     )
 

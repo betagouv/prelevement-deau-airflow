@@ -18,6 +18,7 @@ from utils.common.exceptions import (
     TableIsEmptyError,
 )
 from utils.common.logging import get_logger
+from utils.common.messages import MESSAGES
 from utils.common.object_storage_client import download_file
 from utils.common.utils import encode64, get_file_extension
 from utils.core.settings import settings
@@ -88,7 +89,11 @@ def send_error_mail(dossier: Dossier, message: str, session):
         dossier_envoyer_message_result = dossier_envoyer_message(
             dossier_id=destination_dossier_id,
             instructeur_id=settings.INSTRUCTEUR_ID,
-            body=message,
+            body=MESSAGES["EMAIL_WRAPPER"].format(
+                errors=message,
+                instructeur_email=settings.INSTRUCTEUR_EMAIL,
+                instructeur_telephone=settings.INSTRUCTEUR_TELEPHONE,
+            ),
             correction=CorrectionReasonEnum.incorrect if not settings.DRY_RUN else None,
             token=destination_dossier_token,
         )
@@ -533,7 +538,7 @@ def collect_prelevement_aep_zre():
                     logging.error(f"[{dossier.id}] exception : {e}")
 
             if dossier_errors:
-                send_error_mail(dossier, "\n".join(dossier_errors), session)
+                send_error_mail(dossier, "- " + "\n- ".join(dossier_errors), session)
             else:
                 donnees_prelevement_aep_zre = [
                     DonneesPrelevementAEPZRE(

@@ -10,6 +10,8 @@ class Settings(BaseSettings, case_sensitive=True):
     DEMARCHES_SIMPLIFIEES_TOKEN: str
     DEMARCHE_ID: int
     INSTRUCTEUR_ID: str
+    INSTRUCTEUR_EMAIL: str
+    INSTRUCTEUR_TELEPHONE: str
     SCW_ACCESS_KEY: str
     SCW_SECRET_KEY: str
     SCW_DEFAULT_ORGANIZATION_ID: str
