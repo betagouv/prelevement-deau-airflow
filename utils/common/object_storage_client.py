@@ -43,11 +43,11 @@ def load_csv_from_s3(object_storage_key: str, sep: str = ";"):
 
 def download_folder(bucket_name: str, folder_name: str, local_dir: str):
     """
-    Télécharge tous les fichiers d'un dossier S3 vers un répertoire local.
+    Downloads all files from an S3 folder to a local directory.
 
-    :param bucket_name: Le nom du bucket S3.
-    :param folder_name: Le nom du dossier dans le bucket S3.
-    :param local_dir: Le répertoire local où les fichiers doivent être sauvegardés.
+    :param bucket_name: The name of the S3 bucket.
+    :param folder_name: The name of the folder in the S3 bucket.
+    :param local_dir: The local directory where files should be saved.
     """
     paginator = s3_client.get_paginator("list_objects_v2")
     result_iterator = paginator.paginate(Bucket=bucket_name, Prefix=folder_name)
@@ -59,16 +59,21 @@ def download_folder(bucket_name: str, folder_name: str, local_dir: str):
         if "Contents" in page:
             for obj in page["Contents"]:
                 key = obj["Key"]
-                # Extrait le chemin du fichier relatif à folder_name
+                # Extract the file path relative to folder_name
                 relative_path = os.path.relpath(key, folder_name)
                 local_file_path = os.path.join(local_dir, relative_path)
 
-                if not os.path.exists(os.path.dirname(local_file_path)):
-                    os.makedirs(os.path.dirname(local_file_path))
+                # Skip if the key ends with a slash (indicating a directory)
+                if key.endswith("/"):
+                    continue
 
-                # Télécharge le fichier et l'enregistre localement
-                with open(local_file_path, "wb") as f:
-                    f.write(download_file(bucket_name, key))
+                # Create directory if it doesn't exist
+                os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+                # Download the file and save it locally
+                s3_client.download_file(bucket_name, key, local_file_path)
+
+    print(f"Folder '{folder_name}' downloaded successfully to '{local_dir}'")
 
 
 def make_folder_public(bucket_name: str, folder_name: str):
