@@ -281,9 +281,9 @@ class PrelevementAPEZRESerializer(BaseModel):
     ligne: int
     nom_point_prelevement: str
     prelevement_realise: bool
-    fichier_prelevement_filename: str
-    fichier_prelevement_url: str
-    fichier_prelevement_object_storage: str
+    fichier_prelevement_filename: Optional[str] = None
+    fichier_prelevement_url: Optional[str] = None
+    fichier_prelevement_object_storage: Optional[str] = None
     autre_document_suivi_filename: Optional[str] = None
     autre_document_suivi_url: Optional[str] = None
     autre_document_suivi_object_storage: Optional[str] = None
