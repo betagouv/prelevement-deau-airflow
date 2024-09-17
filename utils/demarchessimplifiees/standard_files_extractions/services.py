@@ -1,5 +1,4 @@
 import datetime as dt
-from collections import Counter
 from io import BytesIO
 from typing import List
 
@@ -9,8 +8,8 @@ from sqlalchemy import and_, or_
 
 from utils.common.exceptions import (
     ColonneHeureMalRemplieError,
-    DateColumnContainsDuplicateValuesError,
     DateColumnContainsInvalidValuesError,
+    DateColumnIsNotSortedError,
     FileError,
     PHValueError,
     StandardFileNomPointDePrelevementError,
@@ -243,15 +242,17 @@ def process_standard_citerne_file(
         )
 
     check_date_is_not_missing(dossier, fichier_citerne, dates)
-    duplicated_dates = [date for date, count in Counter(dates).items() if count > 1]
-    if duplicated_dates:
-        raise DateColumnContainsDuplicateValuesError(
-            email=dossier.adresse_email_declarant,
-            id_dossier=dossier.id,
-            file_name=fichier_citerne.filename,
-            duplicated_dates=duplicated_dates,
-            sheet_name=None,
-        )
+
+    for i in range(len(dates) - 1):
+        if dates[i] >= dates[i + 1]:
+            raise DateColumnIsNotSortedError(
+                email=dossier.adresse_email_declarant,
+                id_dossier=dossier.id,
+                file_name=fichier_citerne.filename,
+                row1=i + 4,
+                row2=i + 5,
+                sheet_name=None,
+            )
 
     check_value_present_per_row(dossier, fichier_citerne, tableur)
     check_values_are_positives(dossier, fichier_citerne, tableur[3:, 1:].flatten())

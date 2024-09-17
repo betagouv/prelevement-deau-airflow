@@ -347,7 +347,7 @@ def process_avis(dossier_id: int, avis: InputAvisSerializer):
 def process_dossier(
     current_dossier: InputDossierSerializer,
 ) -> DossierSerializer:
-    print(current_dossier.number)
+    logging.info(current_dossier.number)
     data = {}
     dict_id_to_champs = {}
     for champ in current_dossier.champs:
