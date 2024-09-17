@@ -27,14 +27,18 @@ champs_to_labels = {
     "Champ-4152855": "prelevement_sur_periode_camion_citerne",
     #  Votre déclaration concerne-t-elle plusieurs mois (ATTENTION : seules les régularisations peuvent faire l'objet d'une déclaration portant sur plusieurs mois) ? : Modifié le 10/09 08:52
     "Champ-4460662": "declaration_plusieurs_mois_camion_citerne",  # checked
+    "Champ-4489395": "declaration_plusieurs_mois_camion_citerne",  # checked
     # Mois de début de déclaration
     "Champ-4460669": "mois_debut_declaration_camion_citerne",  # string
+    "Champ-4489398": "mois_debut_declaration_camion_citerne",  # string
     # Mois de fin de déclaration
     "Champ-4460678": "mois_fin_declaration_camion_citerne",  # string
+    "Champ-4489397": "mois_fin_declaration_camion_citerne",  # string
     # Mois de déclaration
     "Champ-4460664": "mois_declaration_camion_citerne",  # string
     # Dans cette partie, vous allez pouvoir renseigner les volumes pompés en transmettant un tableau de suivi
     "Champ-4467020": "volumes_pompes_tableau_suivi_camion_citerne",  # string
+    "Champ-4489519": "volumes_pompes_tableau_suivi_camion_citerne",  # string
     # Avez-vous prélevé sur au moins un des points autorisés par votre AOT durant l'année 2023 ?
     "Champ-4324950": "prelevement_points_autorises_aot_2023",
     # Comment souhaitez-vous transmettre vos données ? :

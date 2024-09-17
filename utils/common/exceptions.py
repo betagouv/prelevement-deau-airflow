@@ -126,17 +126,16 @@ class DateColumnContainsInvalidValuesError(FileError):
     MESSAGE = MESSAGES["DATE_COLUMN_CONTAINS_INVALID_VALUES"]
 
 
-class DateColumnContainsDuplicateValuesError(FileError):
-    MESSAGE = MESSAGES["DATE_COLUMN_CONTAINS_DUPLICATE_VALUES"]
+class DateColumnIsNotSortedError(FileError):
+    MESSAGE = MESSAGES["DATE_COLUMN_IS_NOT_SORTED"]
 
-    def __init__(self, email, id_dossier, file_name, sheet_name, duplicated_dates):
+    def __init__(self, email, id_dossier, file_name, sheet_name, row1, row2):
         super().__init__(email, id_dossier, file_name, sheet_name)
-        self.duplicated_dates = [
-            duplicate_date.strftime("%d/%m/%Y") for duplicate_date in duplicated_dates
-        ]
+        self.row1 = row1
+        self.row2 = row2
 
     def get_error_message(self):
-        return self.MESSAGE.format(duplicated_dates=self.duplicated_dates)
+        return self.MESSAGE.format(row1=self.row1, row2=self.row2)
 
 
 class ValuesAreNotPositiveError(FileError):

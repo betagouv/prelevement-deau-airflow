@@ -9,7 +9,7 @@ MESSAGES = {
     "PARAMETER_VALUE_IS_WRONG": "La parametre {parameter_name} a une valeur incorrecte. La valeur incorrecte est: {incorrect_value}. Les valeurs attendues sont: {expected_values}.",
     "PAPAMETER_IS_MISSING": "La parametre {parameter_name} est manquant. Les valeurs attendues sont: {expected_values}.",
     "DATE_COLUMN_CONTAINS_INVALID_VALUES": "La colonne de date contient des valeurs invalides. Vérifier que la frequence est correcte. Vérifier qu'il n'y a pas de valeurs manquantes.",
-    "DATE_COLUMN_CONTAINS_DUPLICATE_VALUES": "La colonne de date contient des valeurs dupliquées. les valeurs dupliquées sont: {duplicated_dates}",
+    "DATE_COLUMN_IS_NOT_SORTED": "La colonne de date n'est pas triée. Vérifier que les dates des lignes {row1} et {row2} sont triées.",
     "VALUES_ARE_NOT_POSITIVE": "Les valeurs du tableau doivent être positives.",
     "AT_LEAST_ONE_VALUE_SHOULD_BE_PROVIDED_BY_ROW": "Au moins une valeur doit être renseignée. Dans la ligne {row} du tableau.",
     "MISSING_DATE": "La date est manquante dans le tableau. Dans la ligne {row} du tableau.",
