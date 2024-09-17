@@ -89,6 +89,7 @@ def send_error_mail(dossier: Dossier, message: str, session):
             dossier_id=destination_dossier_id,
             instructeur_id=settings.INSTRUCTEUR_ID,
             body=MESSAGES["EMAIL_WRAPPER"].format(
+                dossier_id=dossier.id,
                 errors=message,
                 instructeur_email=settings.INSTRUCTEUR_EMAIL,
                 instructeur_telephone=settings.INSTRUCTEUR_TELEPHONE,
