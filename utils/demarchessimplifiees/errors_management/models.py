@@ -5,7 +5,7 @@ from utils.db.base_class import Base
 
 class ErrorMail(Base):
     __tablename__ = "error_mail"
-    __table_args__ = {"schema": "prelevement_deau"}
+    __table_args__ = {"schema": "demarches_simplifiees"}
 
     id_dossier = Column(Integer, index=True, comment="Identifiant unique du dossier.")
     email = Column(String, comment="Adresse email du déclarant")

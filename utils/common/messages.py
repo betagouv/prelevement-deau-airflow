@@ -22,6 +22,8 @@ MESSAGES = {
     "COLONNE_HEURE_MAL_REMPLIE": "La colonne d'heure est mal remplie. Vérifier que la colonne d'heure est bien remplie. La valeur incorrecte est: {incorrect_value} à la ligne {row}.",
     "PH_VALUE_ERROR": "La valeur du pH est incorrecte. Vérifier que la valeur du pH est correcte et doit être compris entre . La valeur incorrecte est: {incorrect_value} à la ligne {row}.",
     "EMAIL_WRAPPER": """
+[Mail de la DEAL] Erreur dans le dossier {dossier_id}
+
 Bonjour,
 Vous avez déposé des données de suivi pour un ou des point(s) de prélèvement suivi(s) par la DEAL.
 Des tests automatiques sont réalisés sur chaque dossier afin de s'assurer de la conformité et de la cohérence des données. Les erreurs suivantes ont été identifiées sur votre dossier :
